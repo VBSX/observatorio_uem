@@ -1,0 +1,37 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <div class="filter-container">
+        <form method="GET" action="{{ url_for('index') }}">
+            <div class="form-group">
+                <label for="categoria">Filtrar por Categoria:</label>
+                <select name="categoria" id="categoria" onchange="this.form.submit()">
+                    <option value="">Todas</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat }}" {% if request.args.get('categoria') == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="periodo">Filtrar por Período:</label>
+                <select name="periodo" id="periodo" onchange="this.form.submit()">
+                    <option value="">Desde Sempre</option>
+                    <option value="ultimo_mes" {% if request.args.get('periodo') == 'ultimo_mes' %}selected{% endif %}>Último Mês</option>
+                </select>
+            </div>
+            <a href="{{ url_for('index') }}" class="btn-clear-filter">Limpar Filtros</a>
+        </form>
+    </div>
+
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+    <div class="actions">
+        <a href="{{ url_for('submit') }}" class="btn-submit">VIU ALGO? RELATE AQUI!</a>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const locais_data = {{ locais_para_mapa | tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}

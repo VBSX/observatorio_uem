@@ -1,0 +1,371 @@
+/* Estilos Gerais */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Cabeçalho */
+header {
+    background-color: #1f1f1f;
+    border-bottom: 2px solid #8A2BE2; /* Roxo */
+    text-align: center;
+    padding: 20px 0;
+}
+
+header h1 a {
+    color: #f5f5f5;
+    text-decoration: none;
+    font-size: 2.5em;
+}
+
+.slogan {
+    color: #b0b0b0;
+    font-style: italic;
+    margin-top: 5px;
+}
+
+/* Mapa */
+#map {
+    height: 500px;
+    width: 100%;
+    background-color: #333;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+.map-container {
+    margin-top: 20px;
+}
+
+/* Botões e Ações */
+.actions {
+    text-align: center;
+    margin: 25px 0;
+}
+
+.btn-submit {
+    background-color: #8A2BE2; /* Roxo */
+    color: #fff;
+    padding: 15px 30px;
+    text-decoration: none;
+    font-size: 1.2em;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-submit:hover {
+    background-color: #7b25c9;
+}
+
+/* Formulário */
+form {
+    background-color: #1f1f1f;
+    padding: 25px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 1em;
+    box-sizing: border-box; /* Garante que padding não afete a largura total */
+}
+
+.form-group button {
+    background-color: #8A2BE2;
+    color: #fff;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+/* Mensagens Flash */
+.flashes {
+    background-color: #2e8b57; /* Verde */
+    color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Rodapé */
+footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 30px;
+    color: #777;
+    border-top: 1px solid #333;
+}
+
+/* --- ESTILOS DE FILTROS --- */
+.filter-container {
+    background-color: #1f1f1f;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #333;
+}
+.filter-container form {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 0;
+    margin-top: 0;
+    justify-content: center;
+}
+.filter-container .form-group {
+    margin-bottom: 0;
+    display: flex; /* Para alinhar label e select */
+    align-items: center;
+    gap: 8px; /* Espaço entre label e select */
+}
+.filter-container .form-group label {
+    margin-bottom: 0; /* Remove a margem que empurrava o select para baixo */
+}
+
+.btn-clear-filter {
+    background-color: #333;
+    color: #e0e0e0;
+    padding: 12px 20px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 1em;
+    border: 1px solid #555;
+    transition: background-color 0.2s ease;
+}
+.btn-clear-filter:hover {
+    background-color: #4d4d4d;
+}
+
+/* --- ESTILOS DO POPUP DO MAPA --- */
+.popup-content h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #8A2BE2;
+}
+.popup-content p {
+    margin: 4px 0;
+}
+.popup-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    border-top: 1px solid #444;
+    padding-top: 8px;
+}
+.popup-nav .nav-btn {
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+.popup-nav .nav-btn:hover:not(:disabled) {
+    background-color: #555;
+}
+.popup-nav .nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* --- ESTILOS DA PÁGINA DE RELATO INDIVIDUAL --- */
+.relato-container {
+    background-color: #1f1f1f;
+    padding: 25px;
+    border-radius: 8px;
+}
+.relato-full header h1 {
+    color: #8A2BE2;
+    font-size: 2em; /* Ajuste para responsividade */
+}
+.relato-meta {
+    color: #aaa;
+    font-size: 0.9em;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.relato-body p {
+    white-space: pre-wrap; /* Mantém as quebras de linha do texto */
+}
+
+/* --- SEÇÃO DE VOTOS --- */
+.vote-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #444;
+    text-align: center;
+}
+.btn-vote {
+    padding: 10px 20px;
+    margin: 0 10px;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1em;
+    transition: transform 0.2s ease;
+}
+.btn-vote:hover:not(:disabled) {
+    transform: scale(1.05);
+}
+.btn-vote.acredito { background-color: #2e8b57; }
+.btn-vote.cetico { background-color: #b22222; }
+.btn-vote:disabled { opacity: 0.6; cursor: not-allowed; }
+.vote-message {
+    margin-top: 10px;
+    font-weight: bold;
+    min-height: 1.2em;
+}
+
+/* --- SEÇÃO DE COMENTÁRIOS --- */
+.comments-section {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #444;
+}
+.comment {
+    background-color: #2a2a2a;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border-left: 3px solid #8A2BE2;
+}
+.comment-author {
+    font-size: 0.9em;
+    color: #aaa;
+    margin-bottom: 5px;
+}
+.comment-form {
+    margin-top: 20px;
+    padding: 0;
+}
+
+/* ========================================= */
+/* --- MEDIA QUERIES PARA RESPONSIVIDADE --- */
+/* ========================================= */
+
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    header h1 a {
+        font-size: 2em;
+    }
+
+    .slogan {
+        font-size: 0.9em;
+    }
+
+    /* Filtros: empilha os itens verticalmente */
+    .filter-container form {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch; /* Estica os itens para preencher a largura */
+    }
+
+    .filter-container .form-group {
+        flex-direction: column; /* Empilha label e select */
+        align-items: flex-start; /* Alinha texto à esquerda */
+        gap: 5px;
+    }
+    
+    .filter-container .form-group select,
+    .btn-clear-filter {
+        width: 100%; /* Faz os selects e botão ocuparem toda a largura */
+        box-sizing: border-box;
+    }
+
+    /* Mapa: altura pode ser ajustada para telas menores */
+    #map {
+        height: 350px;
+    }
+
+    .btn-submit {
+        padding: 12px 20px;
+        font-size: 1em;
+    }
+
+    /* Página de Relato */
+    .relato-full header h1 {
+        font-size: 1.6em;
+    }
+
+    .btn-vote {
+        padding: 8px 15px;
+        margin: 0 5px;
+        font-size: 0.9em;
+    }
+    
+    .vote-section p {
+        font-size: 0.9em;
+    }
+
+    .comment-author {
+        font-size: 0.85em;
+    }
+    .comment p {
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 480px) {
+    header h1 a {
+        font-size: 1.8em;
+    }
+    
+    .slogan {
+        font-size: 0.8em;
+    }
+
+    #map {
+        height: 300px;
+    }
+
+    .btn-vote {
+        display: block; /* Empilha os botões de voto */
+        width: calc(100% - 20px); /* Ocupa a largura total com margens */
+        margin: 10px auto;
+    }
+    
+    /* Garante que o texto de voto também se ajusta */
+    .vote-section p {
+        font-size: 0.85em;
+    }
+}

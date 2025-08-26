@@ -1,0 +1,71 @@
+{% extends 'layout.html' %}
+
+{% block head_scripts %}
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+{% endblock %}
+
+{% block content %}
+    <h2>Relate sua Experiência Sobrenatural</h2>
+    <form method="post">
+        <div class="form-group">
+            <label for="titulo">Título do Relato</label>
+            <input type="text" name="titulo" placeholder="Ex: Vulto no corredor do Bloco C56" id="titulo" value="{{ form_data.titulo or '' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="local-select">Onde Aconteceu?</label>
+            <select name="local" id="local-select" required>
+                <option value="" disabled {% if not form_data.local %}selected{% endif %}>Selecione um local...</option>
+                {% for local in locais %}
+                    <option value="{{ local }}" {% if form_data.local == local %}selected{% endif %}>{{ local }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group" id="outro-local-container" style="display: none;">
+            <label for="outro-local-texto">Especifique o local:</label>
+            <input type="text" name="outro_local_texto" id="outro-local-texto" placeholder="Ex: No banco debaixo da árvore em frente ao RU" value="{{ form_data.outro_local_texto or '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="categoria">Qual o tipo de fenômeno?</label>
+            <select name="categoria" id="categoria" required>
+                <option value="" disabled {% if not form_data.categoria %}selected{% endif %}>Selecione uma categoria...</option>
+                {% for cat in categorias %}
+                <option value="{{ cat }}" {% if form_data.categoria == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="descricao">Descreva o que aconteceu</label>
+            <textarea name="descricao" placeholder="Conte os detalhes da sua experiência..." id="descricao" rows="8" required>{{ form_data.descricao or '' }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <div class="g-recaptcha" data-sitekey="{{ site_key }}"></div>
+        </div>
+
+        <div class="form-group">
+            <button type="submit">Enviar para o Mapa</button>
+        </div>
+    </form>
+
+    <script>
+        const localSelect = document.getElementById('local-select');
+        const outroLocalContainer = document.getElementById('outro-local-container');
+        const outroLocalInput = document.getElementById('outro-local-texto');
+
+        function toggleOutroLocal() {
+            if (localSelect.value === 'Outro Local / Não Listado') {
+                outroLocalContainer.style.display = 'block';
+                outroLocalInput.required = true;
+            } else {
+                outroLocalContainer.style.display = 'none';
+                outroLocalInput.required = false;
+            }
+        }
+        localSelect.addEventListener('change', toggleOutroLocal);
+        document.addEventListener('DOMContentLoaded', toggleOutroLocal);
+    </script>
+{% endblock %}

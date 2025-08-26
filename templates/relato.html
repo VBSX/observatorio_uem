@@ -1,0 +1,92 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="relato-container">
+    <a href="{{ url_for('index') }}">&larr; Voltar para o Mapa</a>
+    <article class="relato-full">
+        <header>
+            <h1>{{ relato.titulo }}</h1>
+            <p class="relato-meta">
+                <strong>Local:</strong> {{ relato.local }} | 
+                <strong>Categoria:</strong> {{ relato.categoria }} |
+                <strong>Data:</strong> {{ relato.criado_em.strftime('%d/%m/%Y') }}
+            </p>
+        </header>
+        <div class="relato-body">
+            <p>{{ relato.descricao }}</p>
+        </div>
+        <footer>
+            <div class="vote-section" data-relato-id="{{ relato.id }}">
+                <p>Este relato é crível?</p>
+                <button class="btn-vote acredito" data-voto="acredito" {% if voto_usuario and voto_usuario.tipo_voto == 'acredito' %}disabled{% endif %}>
+                    👻 Eu Acredito (<span id="votos-acredito">{{ relato.votos_acredito }}</span>)
+                </button>
+                <button class="btn-vote cetico" data-voto="cetico" {% if voto_usuario and voto_usuario.tipo_voto == 'cetico' %}disabled{% endif %}>
+                    🤔 Cético (<span id="votos-cetico">{{ relato.votos_cetico }}</span>)
+                </button>
+                <p id="vote-message" class="vote-message"></p>
+            </div>
+        </footer>
+    </article>
+
+    <section class="comments-section">
+        <h2>Comentários ({{ comentarios|length }})</h2>
+        <div class="comments-list">
+            {% for comentario in comentarios %}
+            <div class="comment">
+                <p class="comment-author"><strong>{{ comentario.autor }}</strong> em {{ comentario.criado_em.strftime('%d/%m/%Y %H:%M') }}</p>
+                <p>{{ comentario.texto }}</p>
+            </div>
+            {% else %}
+            <p>Nenhum comentário ainda. Seja o primeiro a comentar!</p>
+            {% endfor %}
+        </div>
+        <form method="POST" action="{{ url_for('add_comment', relato_id=relato.id) }}" class="comment-form">
+            <h3>Deixe seu Comentário</h3>
+            <div class="form-group">
+                <label for="autor">Seu Nome:</label>
+                <input type="text" id="autor" name="autor" required>
+            </div>
+            <div class="form-group">
+                <label for="texto">Comentário:</label>
+                <textarea id="texto" name="texto" rows="4" required></textarea>
+            </div>
+            <button type="submit">Enviar Comentário</button>
+        </form>
+    </section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const voteSection = document.querySelector('.vote-section');
+    if (voteSection) {
+        voteSection.addEventListener('click', async (e) => {
+            const button = e.target.closest('.btn-vote');
+            if (!button || button.disabled) return;
+
+            const relatoId = voteSection.dataset.relatoId;
+            const tipoVoto = button.dataset.voto;
+
+            try {
+                const response = await fetch(`/vote/${relatoId}/${tipoVoto}`, { method: 'POST' });
+                const data = await response.json();
+                
+                const messageEl = document.getElementById('vote-message');
+                messageEl.textContent = data.message;
+
+                if (response.ok && data.success) {
+                    document.getElementById('votos-acredito').textContent = data.votos_acredito;
+                    document.getElementById('votos-cetico').textContent = data.votos_cetico;
+                    document.querySelectorAll('.btn-vote').forEach(btn => btn.disabled = true);
+                    messageEl.style.color = 'green';
+                } else {
+                    messageEl.style.color = 'red';
+                }
+            } catch (error) {
+                document.getElementById('vote-message').textContent = 'Ocorreu um erro de rede.';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
