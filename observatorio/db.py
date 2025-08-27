@@ -1,38 +1,45 @@
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import click
 from flask import current_app, g
 import os
 
 def get_db():
-    """Conecta-se ao banco de dados, criando uma nova conexão se não existir."""
+    """Conecta-se à base de dados PostgreSQL, criando uma nova conexão se não existir."""
     if 'db' not in g:
-        g.db = sqlite3.connect(
-            current_app.config['DATABASE'],
-            detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        g.db.row_factory = sqlite3.Row
+        try:
+            # Usa a URL de conexão completa fornecida pelo Neon.
+            g.db = psycopg2.connect(current_app.config['DATABASE_URL'])
+        except psycopg2.OperationalError as e:
+            # Loga um erro claro se a conexão falhar.
+            current_app.logger.error(f"Erro ao conectar à base de dados PostgreSQL: {e}")
+            raise
     return g.db
 
 def close_db(e=None):
-    """Fecha a conexão com o banco de dados."""
+    """Fecha a conexão com a base de dados."""
     db = g.pop('db', None)
     if db is not None:
         db.close()
 
 def init_db():
-    """Limpa os dados existentes e cria novas tabelas."""
+    """Executa o ficheiro schema.sql para criar as tabelas na base de dados."""
     db = get_db()
+    cur = db.cursor()
     schema_path = os.path.join(current_app.root_path, '..', 'schema.sql')
     with open(schema_path, 'r', encoding='utf-8') as f:
-        db.executescript(f.read())
+        cur.execute(f.read())
+    db.commit()
+    cur.close()
+    click.echo('Base de dados PostgreSQL inicializada.')
 
 @click.command('init-db')
 def init_db_command():
-    """Comando de linha para inicializar o banco de dados."""
+    """Comando de linha para inicializar a base de dados."""
     init_db()
-    click.echo('Banco de dados inicializado com sucesso.')
+    click.echo('Base de dados inicializada com sucesso.')
 
 def init_app(app):
-    """Registra funções do banco de dados com a aplicação Flask."""
+    """Registra funções da base de dados com a aplicação Flask."""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)

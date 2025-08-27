@@ -24,6 +24,13 @@ def create_app(test_config=None):
         static_folder='../static'
     )
     
+    # --- CONFIGURAÇÃO PARA POSTGRESQL (NEON) ---
+    # Obtém a URL de conexão da variável de ambiente.
+    db_url = os.environ.get('DATABASE_URL')
+    if not db_url:
+        # Se a variável não estiver definida, a aplicação não pode iniciar.
+        raise RuntimeError("DATABASE_URL não está configurada. Verifique as suas variáveis de ambiente.")
+
     app.config.from_mapping(
         SECRET_KEY=os.environ.get('SECRET_KEY'),
         RECAPTCHA_SITE_KEY=os.environ.get('RECAPTCHA_SITE_KEY'),
@@ -34,7 +41,8 @@ def create_app(test_config=None):
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE='Lax',
-        DATABASE=os.path.join(app.instance_path, 'database.db'),
+        # Passa a URL completa para o módulo db.py
+        DATABASE_URL=db_url
     )
 
     if test_config is None:
@@ -42,10 +50,7 @@ def create_app(test_config=None):
     else:
         app.config.from_mapping(test_config)
 
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
+    # A lógica de criar a pasta 'instance' não é mais necessária, pois a DB é externa.
 
     def load_locations():
         try:
@@ -69,6 +74,7 @@ def create_app(test_config=None):
 
     limiter.init_app(app)
 
+    # Inicializa a base de dados com a aplicação
     from . import db
     db.init_app(app)
 
