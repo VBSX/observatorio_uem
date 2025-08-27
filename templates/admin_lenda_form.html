@@ -1,0 +1,46 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>{{ title }}</h1>
+    
+    <form method="post" enctype="multipart/form-data" novalidate>
+        <div class="form-group">
+            <label for="titulo">Título da Lenda</label>
+            <input type="text" name="titulo" id="titulo" value="{{ lenda.titulo or '' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="local">Local Principal</label>
+            <select name="local" id="local" required>
+                <option value="" disabled {% if not lenda.local %}selected{% endif %}>Selecione um local...</option>
+                {% for loc in locais %}
+                    <option value="{{ loc }}" {% if lenda.local == loc %}selected{% endif %}>{{ loc }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="descricao">Descrição Completa</label>
+            <textarea name="descricao" id="descricao" rows="12" required>{{ lenda.descricao or '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="imagem">Imagem da Lenda</label>
+            {% if lenda.imagem_url %}
+            <div class="current-image">
+                <p>Imagem atual:</p>
+                <img src="{{ lenda.imagem_url }}" class="admin-thumbnail" alt="Imagem atual">
+            </div>
+            <p><strong>Para substituir, envie uma nova imagem abaixo:</strong></p>
+            {% endif %}
+            <input type="file" name="imagem" id="imagem" accept="image/png, image/jpeg, image/gif">
+        </div>
+        
+        <div class="form-group">
+            <button type="submit">Salvar Lenda</button>
+            <a href="{{ url_for('admin_lendas') }}" class="btn-cancel">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

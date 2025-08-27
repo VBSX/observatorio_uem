@@ -13,7 +13,7 @@ import cloudinary.uploader
 import cloudinary.api
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from urllib.parse import urlparse, urljoin # Adicionado para validação de URL
+from urllib.parse import urlparse, urljoin
 
 load_dotenv()
 
@@ -108,15 +108,12 @@ def get_request_metadata():
         print(f"Aviso: Falha ao contatar a API de geolocalização para o IP {ip_address}")
     return ip_address, city, user_agent
 
-# --- NOVA FUNÇÃO HELPER DE SEGURANÇA ---
 def is_safe_url(target):
-    """Verifica se uma URL de redirecionamento é segura."""
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
 def safe_redirect(endpoint, **values):
-    """Redireciona para um endpoint de forma segura."""
     target = url_for(endpoint, **values)
     if is_safe_url(target):
         return redirect(target)
@@ -131,13 +128,24 @@ def index():
     params = [1]
     filter_category = request.args.get('categoria')
     filter_period = request.args.get('periodo')
+    search_query = request.args.get('q', '').strip()
+
     if filter_category and filter_category in CATEGORIAS:
         conditions.append('categoria = ?')
         params.append(filter_category)
+    
     if filter_period == 'ultimo_mes':
         conditions.append("criado_em >= date('now', '-1 month')")
+        
+    if search_query:
+        conditions.append('(LOWER(titulo) LIKE ? OR LOWER(descricao) LIKE ?)')
+        search_term = f"%{search_query.lower()}%"
+        params.extend([search_term, search_term])
+
     query = 'SELECT * FROM relatos WHERE ' + ' AND '.join(conditions) + ' ORDER BY id DESC'
+    
     relatos_db = db.execute(query, params).fetchall()
+    
     relatos_agrupados = defaultdict(list)
     default_coords = LOCAIS_UEM.get("Outro Local / Não Listado", [-23.4065, -51.9395])
     for relato in relatos_db:
@@ -148,7 +156,11 @@ def index():
         coord_key = tuple(coords)
         relatos_agrupados[coord_key].append(relato_dict)
     locais_para_mapa = [{"lat": c[0], "lon": c[1], "relatos": r} for c, r in relatos_agrupados.items()]
-    return render_template('index.html', locais_para_mapa=locais_para_mapa, categorias=CATEGORIAS)
+    
+    return render_template('index.html', 
+                           locais_para_mapa=locais_para_mapa, 
+                           categorias=CATEGORIAS,
+                           search_query=search_query)
 
 @app.route('/submit', methods=('GET', 'POST'))
 @limiter.limit("5 per minute")
@@ -236,11 +248,13 @@ def relato(relato_id):
         c['criado_em'] = datetime.strptime(c['criado_em'], '%Y-%m-%d %H:%M:%S')
     
     voto_usuario = db.execute('SELECT tipo_voto FROM votos WHERE relato_id = ? AND session_id = ?', (relato_id, session.get('sid'))).fetchone()
+    testemunha_usuario = db.execute('SELECT id FROM testemunhas WHERE relato_id = ? AND session_id = ?', (relato_id, session.get('sid'))).fetchone()
     
     return render_template('relato.html', 
                            relato=relato_dict, 
                            comentarios=comentarios_list, 
                            voto_usuario=voto_usuario,
+                           testemunha_usuario=testemunha_usuario,
                            site_key=app.config['RECAPTCHA_SITE_KEY'],
                            show_captcha=not app.debug)
 
@@ -305,7 +319,8 @@ def vote(relato_id, tipo_voto):
     if tipo_voto not in ['acredito', 'cetico']:
         return jsonify({'success': False, 'message': 'Tipo de voto inválido'}), 400
     db = get_db()
-    if db.execute('SELECT * FROM votos WHERE relato_id = ? AND session_id = ?', (relato_id, session['sid'])).fetchone():
+    if db.execute('SELECT * FROM votos WHERE relato_id = ? AND session_id = ?', (relato_id, session['sid'])).fetchone() or \
+       db.execute('SELECT * FROM testemunhas WHERE relato_id = ? AND session_id = ?', (relato_id, session['sid'])).fetchone():
         return jsonify({'success': False, 'message': 'Você já votou neste relato.'}), 403
     
     ip_address, city, user_agent = get_request_metadata()
@@ -320,10 +335,54 @@ def vote(relato_id, tipo_voto):
     contagens = db.execute('SELECT votos_acredito, votos_cetico FROM relatos WHERE id = ?', (relato_id,)).fetchone()
     return jsonify({'success': True, 'message': 'Voto computado!', 'votos_acredito': contagens['votos_acredito'], 'votos_cetico': contagens['votos_cetico']})
 
+@app.route('/witness/<int:relato_id>', methods=['POST'])
+@limiter.limit("30 per hour")
+def witness(relato_id):
+    if 'sid' not in session:
+        import uuid
+        session['sid'] = str(uuid.uuid4())
+    
+    db = get_db()
+    if db.execute('SELECT * FROM votos WHERE relato_id = ? AND session_id = ?', (relato_id, session['sid'])).fetchone() or \
+       db.execute('SELECT * FROM testemunhas WHERE relato_id = ? AND session_id = ?', (relato_id, session['sid'])).fetchone():
+        return jsonify({'success': False, 'message': 'Você já interagiu com este relato.'}), 403
+
+    ip_address, city, user_agent = get_request_metadata()
+    db.execute(
+        'INSERT INTO testemunhas (relato_id, session_id, ip_address, city, user_agent) VALUES (?, ?, ?, ?, ?)',
+        (relato_id, session['sid'], ip_address, city, user_agent)
+    )
+    db.execute('UPDATE relatos SET votos_testemunha = votos_testemunha + 1 WHERE id = ?', (relato_id,))
+    db.commit()
+    
+    nova_contagem = db.execute('SELECT votos_testemunha FROM relatos WHERE id = ?', (relato_id,)).fetchone()['votos_testemunha']
+    return jsonify({'success': True, 'message': 'Testemunho registrado!', 'votos_testemunha': nova_contagem})
+
+@app.route('/lendas')
+def lendas():
+    db = get_db()
+    todas_lendas = db.execute('SELECT * FROM lendas ORDER BY titulo ASC').fetchall()
+    return render_template('lendas.html', lendas=todas_lendas)
+
+@app.route('/lenda/<int:lenda_id>')
+def lenda(lenda_id):
+    db = get_db()
+    lenda = db.execute('SELECT * FROM lendas WHERE id = ?', (lenda_id,)).fetchone()
+    if lenda is None:
+        flash("Lenda não encontrada.")
+        return safe_redirect('lendas')
+    return render_template('lenda.html', lenda=lenda)
+
+
 # --- ROTAS DE ADMIN ---
 @app.route('/admin')
 @auth_required
 def admin():
+    return safe_redirect('admin_relatos')
+
+@app.route('/admin/relatos')
+@auth_required
+def admin_relatos():
     db = get_db()
     filtro_status = request.args.get('filtro', 'pendentes')
 
@@ -339,7 +398,6 @@ def admin():
     elif filtro_status == 'denunciados':
         denunciados_ids_rows = db.execute('SELECT DISTINCT relato_id FROM comentarios WHERE denunciado = 1').fetchall()
         denunciados_ids = [row['relato_id'] for row in denunciados_ids_rows]
-        
         if not denunciados_ids:
             query += ' WHERE 1 = 0'
         else:
@@ -374,7 +432,7 @@ def approve_relato(relato_id):
     db.execute('UPDATE relatos SET aprovado = 1 WHERE id = ?', (relato_id,))
     db.commit()
     flash(f'Relato #{relato_id} foi aprovado com sucesso!')
-    return safe_redirect('admin', filtro=request.args.get('filtro', 'pendentes'))
+    return safe_redirect('admin_relatos', filtro=request.args.get('filtro', 'pendentes'))
 
 @app.route('/admin/delete/<int:relato_id>', methods=['POST'])
 @auth_required
@@ -382,10 +440,11 @@ def delete_relato(relato_id):
     db = get_db()
     db.execute('DELETE FROM votos WHERE relato_id = ?', (relato_id,))
     db.execute('DELETE FROM comentarios WHERE relato_id = ?', (relato_id,))
+    db.execute('DELETE FROM testemunhas WHERE relato_id = ?', (relato_id,))
     db.execute('DELETE FROM relatos WHERE id = ?', (relato_id,))
     db.commit()
     flash(f'Relato #{relato_id} e seus dados associados foram excluídos!')
-    return safe_redirect('admin', filtro=request.args.get('filtro', 'pendentes'))
+    return safe_redirect('admin_relatos', filtro=request.args.get('filtro', 'pendentes'))
 
 @app.route('/admin/delete_comment/<int:comment_id>', methods=['POST'])
 @auth_required
@@ -398,7 +457,7 @@ def delete_comment(comment_id):
         flash(f'Comentário #{comment_id} foi excluído com sucesso!')
     else:
         flash('Comentário não encontrado.')
-    return safe_redirect('admin', filtro=request.args.get('filtro', 'denunciados'))
+    return safe_redirect('admin_relatos', filtro=request.args.get('filtro', 'denunciados'))
 
 @app.route('/admin/unreport_comment/<int:comment_id>', methods=['POST'])
 @auth_required
@@ -411,7 +470,88 @@ def unreport_comment(comment_id):
         flash(f'Denúncia do comentário #{comment_id} foi removida.')
     else:
         flash('Comentário não encontrado.')
-    return safe_redirect('admin', filtro='denunciados')
+    return safe_redirect('admin_relatos', filtro='denunciados')
+
+@app.route('/admin/lendas')
+@auth_required
+def admin_lendas():
+    db = get_db()
+    todas_lendas = db.execute('SELECT * FROM lendas ORDER BY id DESC').fetchall()
+    return render_template('admin_lendas.html', lendas=todas_lendas)
+
+@app.route('/admin/lenda/add', methods=['GET', 'POST'])
+@auth_required
+def add_lenda():
+    if request.method == 'POST':
+        titulo = request.form['titulo']
+        descricao = request.form['descricao']
+        local = request.form['local']
+        
+        if not titulo or not descricao or not local:
+            flash('Todos os campos são obrigatórios.')
+        else:
+            imagem_url = None
+            imagem_file = request.files.get('imagem')
+            if imagem_file and imagem_file.filename != '':
+                try:
+                    upload_result = cloudinary.uploader.upload(imagem_file, folder="observatorio_uem_lendas")
+                    imagem_url = upload_result.get('secure_url')
+                except Exception as e:
+                    flash(f'Erro no upload da imagem: {e}')
+                    return render_template('admin_lenda_form.html', lenda=request.form, locais=sorted(LOCAIS_UEM.keys()), title="Adicionar Nova Lenda")
+
+            db = get_db()
+            db.execute('INSERT INTO lendas (titulo, descricao, local, imagem_url) VALUES (?, ?, ?, ?)',
+                       (titulo, descricao, local, imagem_url))
+            db.commit()
+            flash('Nova lenda adicionada com sucesso!')
+            return safe_redirect('admin_lendas')
+
+    return render_template('admin_lenda_form.html', lenda={}, locais=sorted(LOCAIS_UEM.keys()), title="Adicionar Nova Lenda")
+
+@app.route('/admin/lenda/edit/<int:lenda_id>', methods=['GET', 'POST'])
+@auth_required
+def edit_lenda(lenda_id):
+    db = get_db()
+    lenda = db.execute('SELECT * FROM lendas WHERE id = ?', (lenda_id,)).fetchone()
+    if lenda is None:
+        flash('Lenda não encontrada.')
+        return safe_redirect('admin_lendas')
+
+    if request.method == 'POST':
+        titulo = request.form['titulo']
+        descricao = request.form['descricao']
+        local = request.form['local']
+        
+        if not titulo or not descricao or not local:
+            flash('Todos os campos são obrigatórios.')
+        else:
+            imagem_url = lenda['imagem_url']
+            imagem_file = request.files.get('imagem')
+            if imagem_file and imagem_file.filename != '':
+                try:
+                    upload_result = cloudinary.uploader.upload(imagem_file, folder="observatorio_uem_lendas")
+                    imagem_url = upload_result.get('secure_url')
+                except Exception as e:
+                    flash(f'Erro no upload da nova imagem: {e}')
+                    return render_template('admin_lenda_form.html', lenda=lenda, locais=sorted(LOCAIS_UEM.keys()), title=f"Editar Lenda #{lenda['id']}")
+            
+            db.execute('UPDATE lendas SET titulo = ?, descricao = ?, local = ?, imagem_url = ? WHERE id = ?',
+                       (titulo, descricao, local, imagem_url, lenda_id))
+            db.commit()
+            flash(f'Lenda #{lenda_id} atualizada com sucesso!')
+            return safe_redirect('admin_lendas')
+
+    return render_template('admin_lenda_form.html', lenda=lenda, locais=sorted(LOCAIS_UEM.keys()), title=f"Editar Lenda #{lenda['id']}")
+
+@app.route('/admin/lenda/delete/<int:lenda_id>', methods=['POST'])
+@auth_required
+def delete_lenda(lenda_id):
+    db = get_db()
+    db.execute('DELETE FROM lendas WHERE id = ?', (lenda_id,))
+    db.commit()
+    flash(f'Lenda #{lenda_id} foi excluída com sucesso!')
+    return safe_redirect('admin_lendas')
 
 
 @app.cli.command('init-db')

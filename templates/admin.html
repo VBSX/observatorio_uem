@@ -2,6 +2,9 @@
 
 {% block content %}
 <div class="admin-container">
+    <div class="admin-main-actions">
+        <a href="{{ url_for('admin_lendas') }}" class="btn-admin-nav">Gerenciar Lendas</a>
+    </div>
     <h1>Painel de Administração de Relatos</h1>
     <p>Aqui você pode ver todos os relatos, aprovar os que estão pendentes e excluir os indesejados.</p>
 
@@ -11,19 +14,18 @@
     </div>
     {% endif %}
 
-    <!-- BOTÕES DE FILTRO -->
     <div class="admin-filters">
-        <a href="{{ url_for('admin', filtro='pendentes') }}" class="btn-filter {% if filtro_ativo == 'pendentes' %}active{% endif %}">
+        <a href="{{ url_for('admin_relatos', filtro='pendentes') }}" class="btn-filter {% if filtro_ativo == 'pendentes' %}active{% endif %}">
             Pendentes
         </a>
-        <a href="{{ url_for('admin', filtro='aprovados') }}" class="btn-filter {% if filtro_ativo == 'aprovados' %}active{% endif %}">
+        <a href="{{ url_for('admin_relatos', filtro='aprovados') }}" class="btn-filter {% if filtro_ativo == 'aprovados' %}active{% endif %}">
             Aprovados
         </a>
-        <a href="{{ url_for('admin', filtro='todos') }}" class="btn-filter {% if filtro_ativo == 'todos' %}active{% endif %}">
+        <a href="{{ url_for('admin_relatos', filtro='todos') }}" class="btn-filter {% if filtro_ativo == 'todos' %}active{% endif %}">
             Todos
         </a>
         {% if denuncias_count > 0 or filtro_ativo == 'denunciados' %}
-        <a href="{{ url_for('admin', filtro='denunciados') }}" class="btn-filter btn-filter-denuncia {% if filtro_ativo == 'denunciados' %}active{% endif %}">
+        <a href="{{ url_for('admin_relatos', filtro='denunciados') }}" class="btn-filter btn-filter-denuncia {% if filtro_ativo == 'denunciados' %}active{% endif %}">
             Denunciados ({{ denuncias_count }})
         </a>
         {% endif %}

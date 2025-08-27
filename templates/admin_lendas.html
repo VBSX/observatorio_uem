@@ -1,0 +1,55 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>Gerenciamento de Lendas Urbanas</h1>
+    <p>Adicione, edite ou exclua as lendas urbanas oficiais do site.</p>
+
+    <div class="admin-main-actions">
+        <a href="{{ url_for('admin_relatos') }}" class="btn-admin-nav">Gerenciar Relatos</a>
+        <a href="{{ url_for('add_lenda') }}" class="btn-action btn-approve">Adicionar Nova Lenda</a>
+    </div>
+
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Local</th>
+                    <th>Imagem</th>
+                    <th style="width: 200px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lenda in lendas %}
+                <tr>
+                    <td>{{ lenda.id }}</td>
+                    <td>{{ lenda.titulo }}</td>
+                    <td>{{ lenda.local }}</td>
+                    <td>
+                        {% if lenda.imagem_url %}
+                            <a href="{{ lenda.imagem_url }}" target="_blank">
+                                <img src="{{ lenda.imagem_url }}" class="admin-thumbnail" alt="Miniatura">
+                            </a>
+                        {% else %}
+                            <span class="no-image">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions-cell">
+                        <a href="{{ url_for('edit_lenda', lenda_id=lenda.id) }}" class="btn-action btn-view">Editar</a>
+                        <form action="{{ url_for('delete_lenda', lenda_id=lenda.id) }}" method="POST">
+                            <button type="submit" class="btn-action btn-delete" onclick="return confirm('Tem certeza que deseja excluir esta lenda?');">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center;">Nenhuma lenda adicionada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

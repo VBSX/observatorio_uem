@@ -1,34 +1,9 @@
-/* Estilos Gerais */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #121212;
-    color: #e0e0e0;
-    margin: 0;
-    line-height: 1.6;
+/* Estilos para páginas específicas: Mapa, Relato, Lendas e Admin */
+
+/* --- PÁGINA DO MAPA --- */
+.map-container {
+    margin-top: 20px;
 }
-.container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 20px;
-}
-/* Cabeçalho */
-header {
-    background-color: #1f1f1f;
-    border-bottom: 2px solid #8A2BE2;
-    text-align: center;
-    padding: 20px 0;
-}
-header h1 a {
-    color: #f5f5f5;
-    text-decoration: none;
-    font-size: 2.5em;
-}
-.slogan {
-    color: #b0b0b0;
-    font-style: italic;
-    margin-top: 5px;
-}
-/* Mapa */
 #map {
     height: 500px;
     width: 100%;
@@ -36,82 +11,6 @@ header h1 a {
     border-radius: 8px;
     border: 1px solid #444;
 }
-.map-container {
-    margin-top: 20px;
-}
-/* Botões e Ações */
-.actions {
-    text-align: center;
-    margin: 25px 0;
-}
-.btn-submit {
-    background-color: #8A2BE2;
-    color: #fff;
-    padding: 15px 30px;
-    text-decoration: none;
-    font-size: 1.2em;
-    font-weight: bold;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
-}
-.btn-submit:hover {
-    background-color: #7b25c9;
-}
-/* Formulário */
-form {
-    background-color: #1f1f1f;
-    padding: 25px;
-    border-radius: 8px;
-    margin-top: 20px;
-}
-.form-group {
-    margin-bottom: 20px;
-}
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
-}
-.form-group input,
-.form-group textarea,
-.form-group select {
-    width: 100%;
-    padding: 12px;
-    background-color: #333;
-    border: 1px solid #555;
-    border-radius: 4px;
-    color: #e0e0e0;
-    font-size: 1em;
-    box-sizing: border-box;
-}
-.form-group button {
-    background-color: #8A2BE2;
-    color: #fff;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1.1em;
-    font-weight: bold;
-}
-/* Mensagens Flash */
-.flashes {
-    background-color: #2e8b57;
-    color: #fff;
-    padding: 15px;
-    border-radius: 5px;
-    text-align: center;
-    margin-bottom: 20px;
-}
-/* Rodapé */
-footer {
-    text-align: center;
-    padding: 20px;
-    margin-top: 30px;
-    color: #777;
-    border-top: 1px solid #333;
-}
-/* Estilos de Filtros */
 .filter-container {
     background-color: #1f1f1f;
     padding: 15px;
@@ -145,45 +44,13 @@ footer {
     border-radius: 4px;
     font-size: 1em;
     border: 1px solid #555;
-    transition: background-color 0.2s ease;
+    transition: background-color: 0.2s ease;
 }
 .btn-clear-filter:hover {
     background-color: #4d4d4d;
 }
-/* Estilos do Popup do Mapa */
-.popup-content h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: #8A2BE2;
-}
-.popup-content p {
-    margin: 4px 0;
-}
-.popup-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
-    border-top: 1px solid #444;
-    padding-top: 8px;
-}
-.popup-nav .nav-btn {
-    background: #333;
-    border: 1px solid #555;
-    color: #fff;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 3px;
-    transition: background-color 0.2s ease;
-}
-.popup-nav .nav-btn:hover:not(:disabled) {
-    background-color: #555;
-}
-.popup-nav .nav-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-/* Estilos da Página de Relato Individual */
+
+/* --- PÁGINA DE RELATO INDIVIDUAL --- */
 .relato-container {
     background-color: #1f1f1f;
     padding: 25px;
@@ -203,7 +70,17 @@ footer {
 .relato-body p {
     white-space: pre-wrap;
 }
-/* Seção de Votos */
+.relato-image-container {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+}
+.relato-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
 .vote-section {
     margin-top: 30px;
     padding-top: 20px;
@@ -225,13 +102,17 @@ footer {
 }
 .btn-vote.acredito { background-color: #2e8b57; }
 .btn-vote.cetico { background-color: #b22222; }
-.btn-vote:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-vote.witness { background-color: #007bff; }
 .vote-message {
     margin-top: 10px;
     font-weight: bold;
     min-height: 1.2em;
 }
-/* Seção de Comentários */
+.witness-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #444;
+}
 .comments-section {
     margin-top: 40px;
     padding-top: 20px;
@@ -244,31 +125,127 @@ footer {
     margin-bottom: 15px;
     border-left: 3px solid #8A2BE2;
 }
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
 .comment-author {
     font-size: 0.9em;
     color: #aaa;
     margin-bottom: 0;
 }
+.report-form {
+    margin: 0;
+    padding: 0;
+    background: none;
+}
+.btn-report {
+    background: none;
+    border: 1px solid #666;
+    color: #aaa;
+    padding: 2px 8px;
+    font-size: 0.75em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+.btn-report:hover {
+    background-color: #b22222;
+    color: #fff;
+    border-color: #b22222;
+}
 .comment-form {
     margin-top: 20px;
     padding: 0;
 }
-/* Contador de Caracteres */
-.form-label-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+
+/* --- PÁGINA DE LENDAS URBANAS --- */
+.lendas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+.lenda-card {
+    background-color: #1f1f1f;
+    border: 1px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    text-decoration: none;
+    color: #e0e0e0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.lenda-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(138, 43, 226, 0.2);
+}
+.lenda-card-img {
     width: 100%;
+    height: 180px;
+    object-fit: cover;
 }
-.char-counter {
-    font-size: 0.85em;
+.lenda-card-img-placeholder {
+    width: 100%;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+    background-color: #2a2a2a;
+}
+.lenda-card-body {
+    padding: 15px;
+}
+.lenda-card-body h2 {
+    margin-top: 0;
+    font-size: 1.4em;
+    color: #8A2BE2;
+}
+.lenda-card-local {
+    font-size: 0.9em;
     color: #aaa;
+    margin-bottom: 10px;
 }
-/* Página de Admin */
+.lenda-card-desc {
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+.lenda-card-link {
+    display: inline-block;
+    margin-top: 15px;
+    font-weight: bold;
+    color: #f0f0f0;
+}
+
+/* --- PÁGINA DE ADMIN --- */
 .admin-container h1 {
     color: #8A2BE2;
     text-align: center;
     margin-bottom: 20px;
+}
+.admin-main-actions {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.btn-admin-nav {
+    display: inline-block;
+    background-color: #444;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin: 0 10px;
+}
+.current-image {
+    margin-bottom: 15px;
+}
+.btn-cancel {
+    display: inline-block;
+    margin-left: 15px;
+    color: #aaa;
+    text-decoration: none;
 }
 .admin-table-container {
     overflow-x: auto;
@@ -359,51 +336,6 @@ footer {
     color: #777;
     font-style: italic;
 }
-/* Estilos de Imagem */
-.relato-image-container {
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: center;
-}
-.relato-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    border: 1px solid #444;
-}
-.popup-image-container {
-    margin-bottom: 10px;
-}
-.popup-image-container img {
-    width: 100%;
-    height: auto;
-    border-radius: 4px;
-}
-/* Media Queries para Responsividade */
-@media (max-width: 768px) {
-    .container { padding: 15px; }
-    header h1 a { font-size: 2em; }
-    .slogan { font-size: 0.9em; }
-    .filter-container form { flex-direction: column; gap: 15px; align-items: stretch; }
-    .filter-container .form-group { flex-direction: column; align-items: flex-start; gap: 5px; }
-    .filter-container .form-group select, .btn-clear-filter { width: 100%; box-sizing: border-box; }
-    #map { height: 350px; }
-    .btn-submit { padding: 12px 20px; font-size: 1em; }
-    .relato-full header h1 { font-size: 1.6em; }
-    .btn-vote { padding: 8px 15px; margin: 0 5px; font-size: 0.9em; }
-    .vote-section p { font-size: 0.9em; }
-    .comment-author { font-size: 0.85em; }
-    .comment p { font-size: 0.9em; }
-}
-@media (max-width: 480px) {
-    header h1 a { font-size: 1.8em; }
-    .slogan { font-size: 0.8em; }
-    #map { height: 300px; }
-    .btn-vote { display: block; width: calc(100% - 20px); margin: 10px auto; }
-    .vote-section p { font-size: 0.85em; }
-}
-
-/* --- ESTILOS PARA FILTROS DO ADMIN --- */
 .admin-filters {
     display: flex;
     justify-content: center;
@@ -444,8 +376,6 @@ footer {
     color: #212529;
     font-weight: bold;
 }
-
-/* --- ESTILOS PARA COMENTÁRIOS DO ADMIN --- */
 .admin-comments-section {
     margin-top: 20px;
     padding-top: 15px;
@@ -509,8 +439,6 @@ footer {
     padding: 4px 8px;
     font-size: 0.8em;
 }
-
-/* --- ESTILOS PARA NOTIFICAÇÃO DO ADMIN --- */
 .admin-notification {
     padding: 15px;
     margin-bottom: 20px;
@@ -530,48 +458,30 @@ footer {
 .admin-notification p strong {
     color: #664d03;
 }
-/* --- ESTILOS PARA DENÚNCIA DE COMENTÁRIOS (PÁGINA RELATO) --- */
-.comment-header {
+/* --- ESTILOS ADICIONAIS PARA A BARRA DE FILTROS COM BUSCA --- */
+
+.filter-container .form-group input[type="search"] {
+    padding: 11px; /* Ajuste fino para alinhar altura com os selects */
+}
+
+.filter-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
+    gap: 10px;
 }
-.comment-header .comment-author {
-    margin-bottom: 0;
-}
-.report-form {
-    margin: 0;
-    padding: 0;
-    background: none;
-}
-.btn-report {
-    background: none;
-    border: 1px solid #666;
-    color: #aaa;
-    padding: 2px 8px;
-    font-size: 0.75em;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-}
-.btn-report:hover {
-    background-color: #b22222;
+
+.btn-filter-submit {
+    background-color: #8A2BE2;
     color: #fff;
-    border-color: #b22222;
-}
-/* --- ESTILOS PARA ÍCONE SOCIAL NO CABEÇALHO --- */
-.social-link {
-    margin-top: 15px;
-}
-
-.social-icon {
-    width: 28px;
-    height: 28px;
-    stroke: #aaa; /* Cor do ícone */
-    transition: stroke 0.2s ease-in-out;
+    padding: 12px 20px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 1em;
+    border: 1px solid #8A2BE2;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
 }
 
-.social-icon:hover {
-    stroke: #8A2BE2; /* Cor do ícone ao passar o mouse */
+.btn-filter-submit:hover {
+    background-color: #7b25c9;
 }

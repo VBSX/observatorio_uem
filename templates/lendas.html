@@ -1,0 +1,28 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="lendas-container">
+    <h1>Lendas Urbanas da UEM</h1>
+    <p>Explore as histórias clássicas e os contos mais famosos que assombram os corredores e bosques da universidade.</p>
+    
+    <div class="lendas-grid">
+        {% for lenda in lendas %}
+        <a href="{{ url_for('lenda', lenda_id=lenda.id) }}" class="lenda-card">
+            {% if lenda.imagem_url %}
+                <img src="{{ lenda.imagem_url }}" alt="Imagem da lenda {{ lenda.titulo }}" class="lenda-card-img">
+            {% else %}
+                <div class="lenda-card-img-placeholder">👻</div>
+            {% endif %}
+            <div class="lenda-card-body">
+                <h2>{{ lenda.titulo }}</h2>
+                <p class="lenda-card-local">{{ lenda.local }}</p>
+                <p class="lenda-card-desc">{{ lenda.descricao[:100] }}...</p>
+                <span class="lenda-card-link">Leia a história completa &rarr;</span>
+            </div>
+        </a>
+        {% else %}
+        <p>Nenhuma lenda foi adicionada ainda.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

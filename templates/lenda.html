@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="relato-container">
+    <a href="{{ url_for('lendas') }}">&larr; Voltar para todas as Lendas</a>
+    <article class="relato-full">
+        <header>
+            <h1>{{ lenda.titulo }}</h1>
+            <p class="relato-meta">
+                <strong>Local:</strong> {{ lenda.local }}
+            </p>
+        </header>
+        <div class="relato-body">
+            {% if lenda.imagem_url %}
+            <div class="relato-image-container">
+                <a href="{{ lenda.imagem_url }}" target="_blank" title="Clique para ampliar a imagem">
+                    <img src="{{ lenda.imagem_url }}" alt="Imagem da lenda: {{ lenda.titulo }}" class="relato-image">
+                </a>
+            </div>
+            {% endif %}
+            <p>{{ lenda.descricao }}</p>
+        </div>
+    </article>
+</div>
+{% endblock %}

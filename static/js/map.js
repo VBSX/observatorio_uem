@@ -1,19 +1,26 @@
 // Coordenadas do centro do campus da UEM
 const uemCenter = [-23.407, -51.938];
 
-// Limites do mapa
-const southWest = L.latLng(-23.4176680570277, -51.95925293288486);
-const northEast = L.latLng(-23.399139563465233, -51.92477975106668);
-const bounds = L.latLngBounds(southWest, northEast);
+// 1. Define a ÁREA DE VISUALIZAÇÃO INICIAL (o campus)
+const initialSouthWest = L.latLng(-23.408829278190915, -51.947006412057846);
+const initialNorthEast = L.latLng(-23.403331898752555, -51.93086554610066);
+const initialBounds = L.latLngBounds(initialSouthWest, initialNorthEast);
 
-// Inicializa o mapa
+// 2. Define LIMITES DE NAVEGAÇÃO MAIORES (permitindo explorar os arredores)
+const maxBoundsSouthWest = L.latLng(-23.45, -52.00);
+const maxBoundsNorthEast = L.latLng(-23.35, -51.88);
+const maxBounds = L.latLngBounds(maxBoundsSouthWest, maxBoundsNorthEast);
+
+// Inicializa o mapa com os limites MAIORES
 const map = L.map('map', {
     center: uemCenter,
     zoom: 15,
-    maxBounds: bounds,
-    minZoom: 15
+    maxBounds: maxBounds, // Define o limite máximo de pan
+    minZoom: 13           // Permite diminuir mais o zoom
 });
-map.fitBounds(bounds);
+
+// Define a visualização inicial para focar no campus
+map.fitBounds(initialBounds);
 
 // Adiciona o "tile layer"
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -98,7 +105,13 @@ function createPopupContent(local, marker) {
 if (typeof locais_data !== 'undefined' && locais_data) {
     locais_data.forEach(local => {
         const marker = L.marker([local.lat, local.lon], { icon: ghostIcon }).addTo(map);
-        const popup = L.popup({ minWidth: 250 });
+        
+        // Mantendo a versão com autoPan e padding, que é mais estável
+        const popup = L.popup({ 
+            minWidth: 250, 
+            autoPan: true, 
+            autoPanPadding: L.point(75, 75) 
+        });
         marker.bindPopup(popup);
         createPopupContent(local, marker);
     });
