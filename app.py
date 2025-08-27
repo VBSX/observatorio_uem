@@ -13,6 +13,7 @@ import cloudinary.uploader
 import cloudinary.api
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from urllib.parse import urlparse, urljoin # Adicionado para validação de URL
 
 load_dotenv()
 
@@ -23,12 +24,10 @@ app.config['RECAPTCHA_SITE_KEY'] = os.environ.get('RECAPTCHA_SITE_KEY')
 app.config['RECAPTCHA_SECRET_KEY'] = os.environ.get('RECAPTCHA_SECRET_KEY')
 
 # --- CONFIGURAÇÕES DE SEGURANÇA PARA PRODUÇÃO ---
-# 1. Limite de tamanho do upload (ex: 4 Megabytes)
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024 
-# 2. Configurações do cookie de sessão
-app.config['SESSION_COOKIE_SECURE'] = True  # Só enviar cookie em HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = True # Impede acesso via JavaScript
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax' # Proteção contra CSRF
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # --- Configuração do Cloudinary ---
 cloudinary.config(
@@ -42,7 +41,7 @@ cloudinary.config(
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 
-# --- 3. CONFIGURAÇÃO DO RATE LIMITER ---
+# --- CONFIGURAÇÃO DO RATE LIMITER ---
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -95,7 +94,7 @@ def auth_required(f):
         )
     return decorated
 
-# --- Função Helper para Coletar Metadados ---
+# --- Funções Helper ---
 def get_request_metadata():
     ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
     user_agent = request.headers.get('User-Agent')
@@ -108,6 +107,21 @@ def get_request_metadata():
     except requests.exceptions.RequestException:
         print(f"Aviso: Falha ao contatar a API de geolocalização para o IP {ip_address}")
     return ip_address, city, user_agent
+
+# --- NOVA FUNÇÃO HELPER DE SEGURANÇA ---
+def is_safe_url(target):
+    """Verifica se uma URL de redirecionamento é segura."""
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+def safe_redirect(endpoint, **values):
+    """Redireciona para um endpoint de forma segura."""
+    target = url_for(endpoint, **values)
+    if is_safe_url(target):
+        return redirect(target)
+    return redirect(url_for('index'))
+
 
 # --- Rotas Públicas ---
 @app.route('/')
@@ -137,7 +151,7 @@ def index():
     return render_template('index.html', locais_para_mapa=locais_para_mapa, categorias=CATEGORIAS)
 
 @app.route('/submit', methods=('GET', 'POST'))
-@limiter.limit("5 per minute") # Limita o envio de relatos
+@limiter.limit("5 per minute")
 def submit():
     show_captcha = not app.debug
     if request.method == 'POST':
@@ -201,7 +215,7 @@ def submit():
             )
             db.commit()
             flash('Seu relato foi enviado e aguarda aprovação. Obrigado por contribuir!')
-            return redirect(url_for('index'))
+            return safe_redirect('index')
             
     return render_template('submit.html', locais=sorted(LOCAIS_UEM.keys()), categorias=CATEGORIAS, form_data={}, site_key=app.config['RECAPTCHA_SITE_KEY'], show_captcha=not app.debug)
 
@@ -211,7 +225,7 @@ def relato(relato_id):
     relato_db = db.execute('SELECT * FROM relatos WHERE id = ? AND aprovado = 1', (relato_id,)).fetchone()
     if relato_db is None:
         flash("Este relato não foi encontrado ou ainda não foi aprovado.")
-        return redirect(url_for('index'))
+        return safe_redirect('index')
     
     relato_dict = dict(relato_db)
     relato_dict['criado_em'] = datetime.strptime(relato_dict['criado_em'], '%Y-%m-%d %H:%M:%S')
@@ -231,7 +245,7 @@ def relato(relato_id):
                            show_captcha=not app.debug)
 
 @app.route('/relato/<int:relato_id>/comment', methods=['POST'])
-@limiter.limit("10 per minute") # Limita o envio de comentários
+@limiter.limit("10 per minute")
 def add_comment(relato_id):
     show_captcha = not app.debug
     if show_captcha:
@@ -239,21 +253,21 @@ def add_comment(relato_id):
         captcha_response = request.form.get('g-recaptcha-response')
         if not captcha_response:
             flash('Por favor, complete a verificação do reCAPTCHA.')
-            return redirect(url_for('relato', relato_id=relato_id))
+            return safe_redirect('relato', relato_id=relato_id)
         
         verify_url = "https://www.google.com/recaptcha/api/siteverify"
         payload = {'secret': secret_key, 'response': captcha_response}
         response = requests.post(verify_url, data=payload)
         if not response.json().get('success'):
             flash('Verificação do reCAPTCHA falhou. Tente novamente.')
-            return redirect(url_for('relato', relato_id=relato_id))
+            return safe_redirect('relato', relato_id=relato_id)
 
     autor = request.form['autor']
     texto = request.form['texto']
     
     if len(autor) > 50 or len(texto) > 500:
         flash("Nome ou comentário excedeu o limite de caracteres!")
-        return redirect(url_for('relato', relato_id=relato_id))
+        return safe_redirect('relato', relato_id=relato_id)
     
     if not autor or not texto:
         flash("Autor e comentário são obrigatórios!")
@@ -266,10 +280,10 @@ def add_comment(relato_id):
         )
         db.commit()
         flash("Comentário adicionado!")
-    return redirect(url_for('relato', relato_id=relato_id))
+    return safe_redirect('relato', relato_id=relato_id)
 
 @app.route('/report_comment/<int:comment_id>', methods=['POST'])
-@limiter.limit("15 per hour") # Limita as denúncias
+@limiter.limit("15 per hour")
 def report_comment(comment_id):
     db = get_db()
     comment = db.execute('SELECT relato_id FROM comentarios WHERE id = ?', (comment_id,)).fetchone()
@@ -277,13 +291,13 @@ def report_comment(comment_id):
         db.execute('UPDATE comentarios SET denunciado = 1 WHERE id = ?', (comment_id,))
         db.commit()
         flash('Obrigado por sua denúncia. O comentário será revisado pela moderação.')
-        return redirect(url_for('relato', relato_id=comment['relato_id']))
+        return safe_redirect('relato', relato_id=comment['relato_id'])
     else:
         flash('Comentário não encontrado.')
-        return redirect(url_for('index'))
+        return safe_redirect('index')
 
 @app.route('/vote/<int:relato_id>/<string:tipo_voto>', methods=['POST'])
-@limiter.limit("30 per hour") # Limita os votos
+@limiter.limit("30 per hour")
 def vote(relato_id, tipo_voto):
     if 'sid' not in session:
         import uuid
@@ -360,7 +374,7 @@ def approve_relato(relato_id):
     db.execute('UPDATE relatos SET aprovado = 1 WHERE id = ?', (relato_id,))
     db.commit()
     flash(f'Relato #{relato_id} foi aprovado com sucesso!')
-    return redirect(url_for('admin', filtro=request.args.get('filtro', 'pendentes')))
+    return safe_redirect('admin', filtro=request.args.get('filtro', 'pendentes'))
 
 @app.route('/admin/delete/<int:relato_id>', methods=['POST'])
 @auth_required
@@ -371,7 +385,7 @@ def delete_relato(relato_id):
     db.execute('DELETE FROM relatos WHERE id = ?', (relato_id,))
     db.commit()
     flash(f'Relato #{relato_id} e seus dados associados foram excluídos!')
-    return redirect(url_for('admin', filtro=request.args.get('filtro', 'pendentes')))
+    return safe_redirect('admin', filtro=request.args.get('filtro', 'pendentes'))
 
 @app.route('/admin/delete_comment/<int:comment_id>', methods=['POST'])
 @auth_required
@@ -384,7 +398,7 @@ def delete_comment(comment_id):
         flash(f'Comentário #{comment_id} foi excluído com sucesso!')
     else:
         flash('Comentário não encontrado.')
-    return redirect(url_for('admin', filtro=request.args.get('filtro', 'denunciados')))
+    return safe_redirect('admin', filtro=request.args.get('filtro', 'denunciados'))
 
 @app.route('/admin/unreport_comment/<int:comment_id>', methods=['POST'])
 @auth_required
@@ -397,7 +411,7 @@ def unreport_comment(comment_id):
         flash(f'Denúncia do comentário #{comment_id} foi removida.')
     else:
         flash('Comentário não encontrado.')
-    return redirect(url_for('admin', filtro='denunciados'))
+    return safe_redirect('admin', filtro='denunciados')
 
 
 @app.cli.command('init-db')

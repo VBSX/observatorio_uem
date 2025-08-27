@@ -560,3 +560,18 @@ footer {
     color: #fff;
     border-color: #b22222;
 }
+/* --- ESTILOS PARA ÍCONE SOCIAL NO CABEÇALHO --- */
+.social-link {
+    margin-top: 15px;
+}
+
+.social-icon {
+    width: 28px;
+    height: 28px;
+    stroke: #aaa; /* Cor do ícone */
+    transition: stroke 0.2s ease-in-out;
+}
+
+.social-icon:hover {
+    stroke: #8A2BE2; /* Cor do ícone ao passar o mouse */
+}
