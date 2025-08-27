@@ -1,10 +1,9 @@
-
 // Coordenadas do centro do campus da UEM
 const uemCenter = [-23.407, -51.938];
 
 // Limites do mapa
-const southWest = L.latLng(-23.414, -51.946);
-const northEast = L.latLng(-23.400, -51.931);
+const southWest = L.latLng(-23.4176680570277, -51.95925293288486);
+const northEast = L.latLng(-23.399139563465233, -51.92477975106668);
 const bounds = L.latLngBounds(southWest, northEast);
 
 // Inicializa o mapa
@@ -50,12 +49,15 @@ function createPopupContent(local, marker) {
             `;
         }
 
+        // Adiciona a miniatura da imagem se ela existir
+        let imageHtml = relato.imagem_url ? `<div class="popup-image-container"><img src="${relato.imagem_url}" alt="Miniatura do relato"></div>` : '';
+
         const content = `
             <div class="popup-content">
+                ${imageHtml}
                 <h4>${relato.titulo}</h4>
                 <p><strong>Local:</strong> ${relato.local}</p>
                 <p><strong>Categoria:</strong> ${relato.categoria}</p>
-                <p><strong>Data:</strong> ${relato.criado_em}</p>
                 <a href="/relato/${relato.id}" target="_blank">Ver detalhes e comentar...</a>
                 ${navigationHtml}
             </div>
@@ -69,13 +71,10 @@ function createPopupContent(local, marker) {
         const popupElement = marker.getPopup().getElement();
         if (!popupElement) return;
         
-        // --- INÍCIO DA CORREÇÃO ---
-        // Impede que cliques dentro do conteúdo do popup fechem a janela
         const contentWrapper = popupElement.querySelector('.popup-content');
         if (contentWrapper) {
             L.DomEvent.disableClickPropagation(contentWrapper);
         }
-        // --- FIM DA CORREÇÃO ---
 
         popupElement.querySelector('.prev')?.addEventListener('click', () => {
             if (currentIndex > 0) {
@@ -92,11 +91,11 @@ function createPopupContent(local, marker) {
     }
     
     marker.on('popupopen', addPopupListeners);
-    updatePopup(); // Gera o conteúdo inicial
+    updatePopup();
 }
 
 // Adiciona os marcadores no mapa
-if (locais_data) {
+if (typeof locais_data !== 'undefined' && locais_data) {
     locais_data.forEach(local => {
         const marker = L.marker([local.lat, local.lon], { icon: ghostIcon }).addTo(map);
         const popup = L.popup({ minWidth: 250 });

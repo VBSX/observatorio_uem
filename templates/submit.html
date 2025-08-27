@@ -1,15 +1,21 @@
 {% extends 'layout.html' %}
 
 {% block head_scripts %}
+    {# O script do Google só será carregado se show_captcha for verdadeiro #}
+    {% if show_captcha %}
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    {% endif %}
 {% endblock %}
 
 {% block content %}
     <h2>Relate sua Experiência Sobrenatural</h2>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data" novalidate>
         <div class="form-group">
-            <label for="titulo">Título do Relato</label>
-            <input type="text" name="titulo" placeholder="Ex: Vulto no corredor do Bloco C56" id="titulo" value="{{ form_data.titulo or '' }}" required>
+            <div class="form-label-group">
+                <label for="titulo">Título do Relato</label>
+                <span id="titulo-counter" class="char-counter">100</span>
+            </div>
+            <input type="text" name="titulo" placeholder="Ex: Vulto no corredor do Bloco C56" id="titulo" value="{{ form_data.titulo or '' }}" required maxlength="100" oninput="updateCounter('titulo', 100)">
         </div>
         
         <div class="form-group">
@@ -38,20 +44,33 @@
         </div>
 
         <div class="form-group">
-            <label for="descricao">Descreva o que aconteceu</label>
-            <textarea name="descricao" placeholder="Conte os detalhes da sua experiência..." id="descricao" rows="8" required>{{ form_data.descricao or '' }}</textarea>
+            <div class="form-label-group">
+                <label for="descricao">Descreva o que aconteceu</label>
+                <span id="descricao-counter" class="char-counter">2000</span>
+            </div>
+            <textarea name="descricao" placeholder="Conte os detalhes da sua experiência..." id="descricao" rows="8" required maxlength="2000" oninput="updateCounter('descricao', 2000)">{{ form_data.descricao or '' }}</textarea>
+        </div>
+
+        <!-- CORREÇÃO: Campo de imagem movido para fora do bloco 'if' -->
+        <div class="form-group">
+            <label for="imagem">Enviar Imagem (Opcional)</label>
+            <input type="file" name="imagem" id="imagem" accept="image/png, image/jpeg, image/gif">
         </div>
         
+        {# O widget do reCAPTCHA continua aqui dentro, para ser condicional #}
+        {% if show_captcha %}
         <div class="form-group">
             <div class="g-recaptcha" data-sitekey="{{ site_key }}"></div>
         </div>
-
+        {% endif %}
+        
         <div class="form-group">
             <button type="submit">Enviar para o Mapa</button>
         </div>
     </form>
 
     <script>
+        // ... (seu script de contador de caracteres e de "Outro Local" continua aqui) ...
         const localSelect = document.getElementById('local-select');
         const outroLocalContainer = document.getElementById('outro-local-container');
         const outroLocalInput = document.getElementById('outro-local-texto');
@@ -66,6 +85,19 @@
             }
         }
         localSelect.addEventListener('change', toggleOutroLocal);
-        document.addEventListener('DOMContentLoaded', toggleOutroLocal);
+        
+        function updateCounter(fieldId, maxLength) {
+            const field = document.getElementById(fieldId);
+            const counter = document.getElementById(fieldId + '-counter');
+            const remaining = maxLength - field.value.length;
+            counter.textContent = remaining;
+            counter.style.color = remaining < 20 ? (remaining < 0 ? '#ff0000' : '#ffc107') : '#aaa';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            toggleOutroLocal();
+            updateCounter('titulo', 100);
+            updateCounter('descricao', 2000);
+        });
     </script>
 {% endblock %}

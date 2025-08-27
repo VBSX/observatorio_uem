@@ -1,5 +1,12 @@
 {% extends 'layout.html' %}
 
+{% block head_scripts %}
+    {# O script do Google só será carregado se show_captcha for verdadeiro #}
+    {% if show_captcha %}
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    {% endif %}
+{% endblock %}
+
 {% block content %}
 <div class="relato-container">
     <a href="{{ url_for('index') }}">&larr; Voltar para o Mapa</a>
@@ -13,6 +20,13 @@
             </p>
         </header>
         <div class="relato-body">
+            {% if relato.imagem_url %}
+            <div class="relato-image-container">
+                <a href="{{ relato.imagem_url }}" target="_blank" title="Clique para ampliar a imagem">
+                    <img src="{{ relato.imagem_url }}" alt="Imagem do relato: {{ relato.titulo }}" class="relato-image">
+                </a>
+            </div>
+            {% endif %}
             <p>{{ relato.descricao }}</p>
         </div>
         <footer>
@@ -34,59 +48,90 @@
         <div class="comments-list">
             {% for comentario in comentarios %}
             <div class="comment">
-                <p class="comment-author"><strong>{{ comentario.autor }}</strong> em {{ comentario.criado_em.strftime('%d/%m/%Y %H:%M') }}</p>
+                <div class="comment-header">
+                    <p class="comment-author"><strong>{{ comentario.autor }}</strong> em {{ comentario.criado_em.strftime('%d/%m/%Y %H:%M') }}</p>
+                    <form action="{{ url_for('report_comment', comment_id=comentario.id) }}" method="POST" class="report-form">
+                        <button type="submit" class="btn-report" title="Denunciar este comentário">Denunciar</button>
+                    </form>
+                </div>
                 <p>{{ comentario.texto }}</p>
             </div>
             {% else %}
             <p>Nenhum comentário ainda. Seja o primeiro a comentar!</p>
             {% endfor %}
         </div>
-        <form method="POST" action="{{ url_for('add_comment', relato_id=relato.id) }}" class="comment-form">
+
+        <form method="POST" action="{{ url_for('add_comment', relato_id=relato.id) }}" class="comment-form" novalidate>
             <h3>Deixe seu Comentário</h3>
             <div class="form-group">
-                <label for="autor">Seu Nome:</label>
-                <input type="text" id="autor" name="autor" required>
+                <div class="form-label-group">
+                    <label for="autor">Seu Nome:</label>
+                    <span id="autor-counter" class="char-counter">50</span>
+                </div>
+                <input type="text" id="autor" name="autor" required maxlength="50" oninput="updateCounter('autor', 50)">
             </div>
             <div class="form-group">
-                <label for="texto">Comentário:</label>
-                <textarea id="texto" name="texto" rows="4" required></textarea>
+                <div class="form-label-group">
+                    <label for="texto">Comentário:</label>
+                    <span id="texto-counter" class="char-counter">500</span>
+                </div>
+                <textarea id="texto" name="texto" rows="4" required maxlength="500" oninput="updateCounter('texto', 500)"></textarea>
             </div>
+            
+            {% if show_captcha %}
+            <div class="form-group">
+                <div class="g-recaptcha" data-sitekey="{{ site_key }}"></div>
+            </div>
+            {% endif %}
+
             <button type="submit">Enviar Comentário</button>
         </form>
     </section>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const voteSection = document.querySelector('.vote-section');
-    if (voteSection) {
-        voteSection.addEventListener('click', async (e) => {
-            const button = e.target.closest('.btn-vote');
-            if (!button || button.disabled) return;
-
-            const relatoId = voteSection.dataset.relatoId;
-            const tipoVoto = button.dataset.voto;
-
-            try {
-                const response = await fetch(`/vote/${relatoId}/${tipoVoto}`, { method: 'POST' });
-                const data = await response.json();
-                
-                const messageEl = document.getElementById('vote-message');
-                messageEl.textContent = data.message;
-
-                if (response.ok && data.success) {
-                    document.getElementById('votos-acredito').textContent = data.votos_acredito;
-                    document.getElementById('votos-cetico').textContent = data.votos_cetico;
-                    document.querySelectorAll('.btn-vote').forEach(btn => btn.disabled = true);
-                    messageEl.style.color = 'green';
-                } else {
-                    messageEl.style.color = 'red';
+    // Script para os votos
+    document.addEventListener('DOMContentLoaded', () => {
+        const voteSection = document.querySelector('.vote-section');
+        if (voteSection) {
+            voteSection.addEventListener('click', async (e) => {
+                const button = e.target.closest('.btn-vote');
+                if (!button || button.disabled) return;
+                const relatoId = voteSection.dataset.relatoId;
+                const tipoVoto = button.dataset.voto;
+                try {
+                    const response = await fetch(`/vote/${relatoId}/${tipoVoto}`, { method: 'POST' });
+                    const data = await response.json();
+                    const messageEl = document.getElementById('vote-message');
+                    messageEl.textContent = data.message;
+                    if (response.ok && data.success) {
+                        document.getElementById('votos-acredito').textContent = data.votos_acredito;
+                        document.getElementById('votos-cetico').textContent = data.votos_cetico;
+                        document.querySelectorAll('.btn-vote').forEach(btn => btn.disabled = true);
+                        messageEl.style.color = 'green';
+                    } else {
+                        messageEl.style.color = 'red';
+                    }
+                } catch (error) {
+                    document.getElementById('vote-message').textContent = 'Ocorreu um erro de rede.';
                 }
-            } catch (error) {
-                document.getElementById('vote-message').textContent = 'Ocorreu um erro de rede.';
-            }
-        });
+            });
+        }
+        
+        // Garante que os contadores de comentários iniciem corretamente
+        updateCounter('autor', 50);
+        updateCounter('texto', 500);
+    });
+
+    // Script genérico para o contador de caracteres
+    function updateCounter(fieldId, maxLength) {
+        const field = document.getElementById(fieldId);
+        const counter = document.getElementById(fieldId + '-counter');
+        if (field && counter) {
+            const remaining = maxLength - field.value.length;
+            counter.textContent = remaining;
+            counter.style.color = remaining < 20 ? (remaining < 0 ? '#ff0000' : '#ffc107') : '#aaa';
+        }
     }
-});
 </script>
 {% endblock %}

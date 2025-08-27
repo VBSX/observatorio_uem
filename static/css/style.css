@@ -6,33 +6,28 @@ body {
     margin: 0;
     line-height: 1.6;
 }
-
 .container {
     max-width: 900px;
     margin: 0 auto;
     padding: 20px;
 }
-
 /* Cabeçalho */
 header {
     background-color: #1f1f1f;
-    border-bottom: 2px solid #8A2BE2; /* Roxo */
+    border-bottom: 2px solid #8A2BE2;
     text-align: center;
     padding: 20px 0;
 }
-
 header h1 a {
     color: #f5f5f5;
     text-decoration: none;
     font-size: 2.5em;
 }
-
 .slogan {
     color: #b0b0b0;
     font-style: italic;
     margin-top: 5px;
 }
-
 /* Mapa */
 #map {
     height: 500px;
@@ -41,19 +36,16 @@ header h1 a {
     border-radius: 8px;
     border: 1px solid #444;
 }
-
 .map-container {
     margin-top: 20px;
 }
-
 /* Botões e Ações */
 .actions {
     text-align: center;
     margin: 25px 0;
 }
-
 .btn-submit {
-    background-color: #8A2BE2; /* Roxo */
+    background-color: #8A2BE2;
     color: #fff;
     padding: 15px 30px;
     text-decoration: none;
@@ -62,11 +54,9 @@ header h1 a {
     border-radius: 5px;
     transition: background-color 0.3s ease;
 }
-
 .btn-submit:hover {
     background-color: #7b25c9;
 }
-
 /* Formulário */
 form {
     background-color: #1f1f1f;
@@ -74,17 +64,14 @@ form {
     border-radius: 8px;
     margin-top: 20px;
 }
-
 .form-group {
     margin-bottom: 20px;
 }
-
 .form-group label {
     display: block;
     margin-bottom: 8px;
     font-weight: bold;
 }
-
 .form-group input,
 .form-group textarea,
 .form-group select {
@@ -95,9 +82,8 @@ form {
     border-radius: 4px;
     color: #e0e0e0;
     font-size: 1em;
-    box-sizing: border-box; /* Garante que padding não afete a largura total */
+    box-sizing: border-box;
 }
-
 .form-group button {
     background-color: #8A2BE2;
     color: #fff;
@@ -108,17 +94,15 @@ form {
     font-size: 1.1em;
     font-weight: bold;
 }
-
 /* Mensagens Flash */
 .flashes {
-    background-color: #2e8b57; /* Verde */
+    background-color: #2e8b57;
     color: #fff;
     padding: 15px;
     border-radius: 5px;
     text-align: center;
     margin-bottom: 20px;
 }
-
 /* Rodapé */
 footer {
     text-align: center;
@@ -127,8 +111,7 @@ footer {
     color: #777;
     border-top: 1px solid #333;
 }
-
-/* --- ESTILOS DE FILTROS --- */
+/* Estilos de Filtros */
 .filter-container {
     background-color: #1f1f1f;
     padding: 15px;
@@ -147,14 +130,13 @@ footer {
 }
 .filter-container .form-group {
     margin-bottom: 0;
-    display: flex; /* Para alinhar label e select */
+    display: flex;
     align-items: center;
-    gap: 8px; /* Espaço entre label e select */
+    gap: 8px;
 }
 .filter-container .form-group label {
-    margin-bottom: 0; /* Remove a margem que empurrava o select para baixo */
+    margin-bottom: 0;
 }
-
 .btn-clear-filter {
     background-color: #333;
     color: #e0e0e0;
@@ -168,8 +150,7 @@ footer {
 .btn-clear-filter:hover {
     background-color: #4d4d4d;
 }
-
-/* --- ESTILOS DO POPUP DO MAPA --- */
+/* Estilos do Popup do Mapa */
 .popup-content h4 {
     margin-top: 0;
     margin-bottom: 10px;
@@ -202,8 +183,7 @@ footer {
     opacity: 0.5;
     cursor: not-allowed;
 }
-
-/* --- ESTILOS DA PÁGINA DE RELATO INDIVIDUAL --- */
+/* Estilos da Página de Relato Individual */
 .relato-container {
     background-color: #1f1f1f;
     padding: 25px;
@@ -211,7 +191,7 @@ footer {
 }
 .relato-full header h1 {
     color: #8A2BE2;
-    font-size: 2em; /* Ajuste para responsividade */
+    font-size: 2em;
 }
 .relato-meta {
     color: #aaa;
@@ -221,10 +201,9 @@ footer {
     margin-bottom: 20px;
 }
 .relato-body p {
-    white-space: pre-wrap; /* Mantém as quebras de linha do texto */
+    white-space: pre-wrap;
 }
-
-/* --- SEÇÃO DE VOTOS --- */
+/* Seção de Votos */
 .vote-section {
     margin-top: 30px;
     padding-top: 20px;
@@ -252,8 +231,7 @@ footer {
     font-weight: bold;
     min-height: 1.2em;
 }
-
-/* --- SEÇÃO DE COMENTÁRIOS --- */
+/* Seção de Comentários */
 .comments-section {
     margin-top: 40px;
     padding-top: 20px;
@@ -269,103 +247,316 @@ footer {
 .comment-author {
     font-size: 0.9em;
     color: #aaa;
-    margin-bottom: 5px;
+    margin-bottom: 0;
 }
 .comment-form {
     margin-top: 20px;
     padding: 0;
 }
-
-/* ========================================= */
-/* --- MEDIA QUERIES PARA RESPONSIVIDADE --- */
-/* ========================================= */
-
+/* Contador de Caracteres */
+.form-label-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.char-counter {
+    font-size: 0.85em;
+    color: #aaa;
+}
+/* Página de Admin */
+.admin-container h1 {
+    color: #8A2BE2;
+    text-align: center;
+    margin-bottom: 20px;
+}
+.admin-table-container {
+    overflow-x: auto;
+}
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 0.9em;
+}
+.admin-table th, .admin-table td {
+    border: 1px solid #444;
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: middle;
+}
+.admin-table th {
+    background-color: #2a2a2a;
+}
+.admin-table tbody tr:nth-child(even) {
+    background-color: #222;
+}
+.admin-table tr.status-pendente {
+    background-color: #3b3a2a;
+    font-weight: bold;
+}
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    color: #fff;
+    font-weight: bold;
+}
+.status-aprovado { background-color: #2e8b57; }
+.status-pendente { background-color: #daa520; }
+.actions-cell {
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.actions-cell form {
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    display: inline;
+}
+.btn-action {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+.btn-approve { background-color: #28a745; }
+.btn-delete { background-color: #dc3545; }
+.btn-view { background-color: #007bff; }
+.relato-description-row td {
+    background-color: #2c2c2c;
+    padding: 20px !important;
+}
+.relato-description-content strong {
+    color: #8A2BE2;
+    display: block;
+    margin-bottom: 8px;
+}
+.relato-description-content p {
+    margin: 0;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+.admin-thumbnail {
+    max-width: 60px; 
+    max-height: 45px;
+    height: auto;
+    border-radius: 4px;
+    border: 1px solid #555;
+    transition: transform 0.2s ease;
+    vertical-align: middle;
+}
+.admin-thumbnail:hover {
+    transform: scale(1.1);
+    border-color: #8A2BE2;
+}
+.no-image {
+    color: #777;
+    font-style: italic;
+}
+/* Estilos de Imagem */
+.relato-image-container {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+}
+.relato-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+.popup-image-container {
+    margin-bottom: 10px;
+}
+.popup-image-container img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+/* Media Queries para Responsividade */
 @media (max-width: 768px) {
-    .container {
-        padding: 15px;
-    }
-
-    header h1 a {
-        font-size: 2em;
-    }
-
-    .slogan {
-        font-size: 0.9em;
-    }
-
-    /* Filtros: empilha os itens verticalmente */
-    .filter-container form {
-        flex-direction: column;
-        gap: 15px;
-        align-items: stretch; /* Estica os itens para preencher a largura */
-    }
-
-    .filter-container .form-group {
-        flex-direction: column; /* Empilha label e select */
-        align-items: flex-start; /* Alinha texto à esquerda */
-        gap: 5px;
-    }
-    
-    .filter-container .form-group select,
-    .btn-clear-filter {
-        width: 100%; /* Faz os selects e botão ocuparem toda a largura */
-        box-sizing: border-box;
-    }
-
-    /* Mapa: altura pode ser ajustada para telas menores */
-    #map {
-        height: 350px;
-    }
-
-    .btn-submit {
-        padding: 12px 20px;
-        font-size: 1em;
-    }
-
-    /* Página de Relato */
-    .relato-full header h1 {
-        font-size: 1.6em;
-    }
-
-    .btn-vote {
-        padding: 8px 15px;
-        margin: 0 5px;
-        font-size: 0.9em;
-    }
-    
-    .vote-section p {
-        font-size: 0.9em;
-    }
-
-    .comment-author {
-        font-size: 0.85em;
-    }
-    .comment p {
-        font-size: 0.9em;
-    }
+    .container { padding: 15px; }
+    header h1 a { font-size: 2em; }
+    .slogan { font-size: 0.9em; }
+    .filter-container form { flex-direction: column; gap: 15px; align-items: stretch; }
+    .filter-container .form-group { flex-direction: column; align-items: flex-start; gap: 5px; }
+    .filter-container .form-group select, .btn-clear-filter { width: 100%; box-sizing: border-box; }
+    #map { height: 350px; }
+    .btn-submit { padding: 12px 20px; font-size: 1em; }
+    .relato-full header h1 { font-size: 1.6em; }
+    .btn-vote { padding: 8px 15px; margin: 0 5px; font-size: 0.9em; }
+    .vote-section p { font-size: 0.9em; }
+    .comment-author { font-size: 0.85em; }
+    .comment p { font-size: 0.9em; }
+}
+@media (max-width: 480px) {
+    header h1 a { font-size: 1.8em; }
+    .slogan { font-size: 0.8em; }
+    #map { height: 300px; }
+    .btn-vote { display: block; width: calc(100% - 20px); margin: 10px auto; }
+    .vote-section p { font-size: 0.85em; }
 }
 
-@media (max-width: 480px) {
-    header h1 a {
-        font-size: 1.8em;
-    }
-    
-    .slogan {
-        font-size: 0.8em;
-    }
+/* --- ESTILOS PARA FILTROS DO ADMIN --- */
+.admin-filters {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+.btn-filter {
+    background-color: #333;
+    color: #e0e0e0;
+    padding: 8px 16px;
+    text-decoration: none;
+    border: 1px solid #555;
+    border-radius: 5px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.btn-filter:hover {
+    background-color: #4d4d4d;
+}
+.btn-filter.active {
+    background-color: #8A2BE2;
+    border-color: #8A2BE2;
+    color: #fff;
+    font-weight: bold;
+}
+.btn-filter-denuncia {
+    background-color: #614d02;
+    border-color: #ffc107;
+    color: #ffc107;
+}
+.btn-filter-denuncia:hover {
+    background-color: #856404;
+    color: #fff;
+}
+.btn-filter-denuncia.active {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+    font-weight: bold;
+}
 
-    #map {
-        height: 300px;
-    }
+/* --- ESTILOS PARA COMENTÁRIOS DO ADMIN --- */
+.admin-comments-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #444;
+}
+.admin-comments-section strong {
+    color: #bbb;
+    display: block;
+    margin-bottom: 10px;
+}
+.admin-comments-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.admin-comment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #3a3a3a;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    gap: 10px;
+}
+.admin-comment-item.denunciado {
+    background-color: #5a2a2a;
+    border-left: 3px solid #dc3545;
+}
+.admin-comment-meta {
+    flex-grow: 1;
+    word-break: break-word;
+}
+.admin-comment-meta strong {
+    color: #e0e0e0;
+    margin-right: 8px;
+    display: inline;
+}
+.admin-comment-meta span {
+    color: #ccc;
+    font-style: italic;
+}
+.denuncia-flag {
+    color: #ffc107;
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+.admin-comment-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.btn-delete-comment {
+    background-color: #c82333;
+    padding: 4px 8px;
+    font-size: 0.8em;
+}
+.btn-unreport {
+    background-color: #6c757d;
+    padding: 4px 8px;
+    font-size: 0.8em;
+}
 
-    .btn-vote {
-        display: block; /* Empilha os botões de voto */
-        width: calc(100% - 20px); /* Ocupa a largura total com margens */
-        margin: 10px auto;
-    }
-    
-    /* Garante que o texto de voto também se ajusta */
-    .vote-section p {
-        font-size: 0.85em;
-    }
+/* --- ESTILOS PARA NOTIFICAÇÃO DO ADMIN --- */
+.admin-notification {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    text-align: center;
+}
+.admin-notification.warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+.admin-notification p {
+    margin: 0;
+    font-weight: 500;
+}
+.admin-notification p strong {
+    color: #664d03;
+}
+/* --- ESTILOS PARA DENÚNCIA DE COMENTÁRIOS (PÁGINA RELATO) --- */
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+.comment-header .comment-author {
+    margin-bottom: 0;
+}
+.report-form {
+    margin: 0;
+    padding: 0;
+    background: none;
+}
+.btn-report {
+    background: none;
+    border: 1px solid #666;
+    color: #aaa;
+    padding: 2px 8px;
+    font-size: 0.75em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+.btn-report:hover {
+    background-color: #b22222;
+    color: #fff;
+    border-color: #b22222;
 }
