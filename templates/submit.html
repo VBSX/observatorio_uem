@@ -16,55 +16,53 @@
     {% endif %}
 
     <form method="post" enctype="multipart/form-data" novalidate>
+        {{ form.csrf_token }}
+
         <div class="form-group">
             <div class="form-label-group">
-                <label for="titulo">Título do Relato</label>
+                {{ form.titulo.label }}
                 <span id="titulo-counter" class="char-counter">100</span>
             </div>
-            <input type="text" name="titulo" placeholder="Ex: Vulto no corredor do Bloco C56" id="titulo" value="{{ form_data.titulo or '' }}" required maxlength="100" oninput="updateCounter('titulo', 100)">
+            {{ form.titulo(class="form-control", placeholder="Ex: Vulto no corredor do Bloco C56", maxlength="100", oninput="updateCounter('titulo', 100)") }}
+            {% for error in form.titulo.errors %}
+                <span class="error-message">{{ error }}</span>
+            {% endfor %}
         </div>
         
         <div class="form-group">
-            <label for="local-select">Onde Aconteceu?</label>
-            <select name="local" id="local-select" required>
-                <option value="" disabled {% if not form_data.local %}selected{% endif %}>Selecione um local...</option>
-                {% for local in locais %}
-                    <option value="{{ local }}" {% if form_data.local == local %}selected{% endif %}>{{ local }}</option>
-                {% endfor %}
-            </select>
+            {{ form.local.label(for=form.local.id) }}
+            {{ form.local(class="form-control") }}
         </div>
 
         <div class="form-group" id="outro-local-container" style="display: none;">
-            <label for="outro-local-texto">Especifique o local:</label>
-            <input type="text" name="outro_local_texto" id="outro-local-texto" placeholder="Ex: No banco debaixo da árvore em frente ao RU" value="{{ form_data.outro_local_texto or '' }}">
+            {{ form.outro_local_texto.label(for=form.outro_local_texto.id) }}
+            {{ form.outro_local_texto(class="form-control", placeholder="Ex: No banco debaixo da árvore em frente ao RU") }}
         </div>
 
         <div class="form-group">
-            <label for="categoria">Qual o tipo de fenômeno?</label>
-            <select name="categoria" id="categoria" required>
-                <option value="" disabled {% if not form_data.categoria %}selected{% endif %}>Selecione uma categoria...</option>
-                {% for cat in categorias %}
-                <option value="{{ cat }}" {% if form_data.categoria == cat %}selected{% endif %}>{{ cat }}</option>
-                {% endfor %}
-            </select>
+            {{ form.categoria.label }}
+            {{ form.categoria(class="form-control") }}
         </div>
 
         <div class="form-group">
             <div class="form-label-group">
-                <label for="descricao">Descreva o que aconteceu</label>
+                {{ form.descricao.label }}
                 <span id="descricao-counter" class="char-counter">2000</span>
             </div>
-            <textarea name="descricao" placeholder="Conte os detalhes da sua experiência..." id="descricao" rows="8" required maxlength="2000" oninput="updateCounter('descricao', 2000)">{{ form_data.descricao or '' }}</textarea>
+            {{ form.descricao(class="form-control", rows="8", placeholder="Conte os detalhes da sua experiência...", maxlength="2000", oninput="updateCounter('descricao', 2000)") }}
+            {% for error in form.descricao.errors %}
+                <span class="error-message">{{ error }}</span>
+            {% endfor %}
         </div>
 
         <div class="form-group">
-            <label for="imagem">Enviar Imagem (Opcional)</label>
-            <input type="file" name="imagem" id="imagem" accept="image/png, image/jpeg, image/gif">
+            {{ form.imagem.label }}
+            {{ form.imagem(class="form-control-file", accept="image/png, image/jpeg, image/gif") }}
         </div>
         
         <div class="form-group">
-            <label for="audio">Áudio (opcional):</label>
-            <input type="file" id="audio" name="audio" accept="audio/*">
+            {{ form.audio.label }}
+            {{ form.audio(class="form-control-file", accept="audio/*") }}
         </div>
 
         {% if show_captcha %}
@@ -74,15 +72,16 @@
         {% endif %}
         
         <div class="form-group">
-            <button type="submit">Enviar para o Mapa</button>
+            {{ form.submit(class="btn-submit") }}
         </div>
     </form>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const localSelect = document.getElementById('local-select');
+            // Note que usamos '{{ form.local.id }}' para garantir que pegamos o ID correto gerado pelo WTForms
+            const localSelect = document.getElementById('{{ form.local.id }}');
             const outroLocalContainer = document.getElementById('outro-local-container');
-            const outroLocalInput = document.getElementById('outro-local-texto');
+            const outroLocalInput = document.getElementById('{{ form.outro_local_texto.id }}');
 
             function toggleOutroLocal() {
                 if (localSelect.value === 'Outro Local / Não Listado') {
@@ -96,10 +95,9 @@
 
             localSelect.addEventListener('change', toggleOutroLocal);
             
-            // Inicializa o estado do campo "Outro Local" e dos contadores
             toggleOutroLocal();
-            updateCounter('titulo', 100);
-            updateCounter('descricao', 2000);
+            updateCounter('{{ form.titulo.id }}', 100);
+            updateCounter('{{ form.descricao.id }}', 2000);
         });
 
         function updateCounter(fieldId, maxLength) {

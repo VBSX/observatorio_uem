@@ -2,11 +2,17 @@
 
 import os
 import json
+import re # Importe a biblioteca de expressões regulares
+from markupsafe import Markup, escape # Importe Markup e escape
 from flask import Flask
 from dotenv import load_dotenv
 import cloudinary
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
+
+# Inicializa o CSRFProtect
+csrf = CSRFProtect()
 
 limiter = Limiter(
     key_func=get_remote_address,
@@ -16,14 +22,24 @@ limiter = Limiter(
 
 def create_app(test_config=None):
     load_dotenv()
-    
+
+    # --- INÍCIO: CÓDIGO DO FILTRO PERSONALIZADO 'nl2br' ---
+    def nl2br(value):
+        """Converte quebras de linha em <br> de forma segura."""
+        if not isinstance(value, str):
+            return value
+        # Escapa o texto para segurança e depois substitui \n por <br>
+        escaped_text = escape(value)
+        return Markup(escaped_text.replace('\n', '<br>\n'))
+    # --- FIM: CÓDIGO DO FILTRO PERSONALIZADO ---
+
     app = Flask(
         __name__,
         instance_relative_config=True,
         template_folder='../templates',
         static_folder='../static'
     )
-    
+
     # --- CONFIGURAÇÃO PARA POSTGRESQL (NEON) ---
     db_url = os.environ.get('DATABASE_URL')
     if not db_url:
@@ -35,17 +51,21 @@ def create_app(test_config=None):
         RECAPTCHA_SECRET_KEY=os.environ.get('RECAPTCHA_SECRET_KEY'),
         ADMIN_USERNAME=os.environ.get('ADMIN_USERNAME'),
         ADMIN_PASSWORD=os.environ.get('ADMIN_PASSWORD'),
-        
+
         # --- Credenciais para Login com Google ---
         GOOGLE_CLIENT_ID=os.environ.get('GOOGLE_CLIENT_ID'),
         GOOGLE_CLIENT_SECRET=os.environ.get('GOOGLE_CLIENT_SECRET'),
-        
+
         MAX_CONTENT_LENGTH=10 * 1024 * 1024, # Aumentado para 10MB para acomodar áudio
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE='Lax',
         DATABASE_URL=db_url
     )
+
+    # Garante que a SECRET_KEY está definida, pois é crucial para o CSRF
+    if not app.config['SECRET_KEY']:
+        raise ValueError("Nenhuma SECRET_KEY definida. Defina-a nas suas variáveis de ambiente.")
 
     if test_config is None:
         app.config.from_pyfile('config.py', silent=True)
@@ -64,15 +84,20 @@ def create_app(test_config=None):
 
     app.config['LOCAIS_UEM'] = load_locations()
     app.config['CATEGORIAS'] = ["Aparição", "Som Estranho", "Objeto Visto", "Sensação Estranha", "Outro Fenômeno"]
-    
+
     cloudinary.config(
-        cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME'), 
-        api_key = os.environ.get('CLOUDINARY_API_KEY'), 
+        cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME'),
+        api_key = os.environ.get('CLOUDINARY_API_KEY'),
         api_secret = os.environ.get('CLOUDINARY_API_SECRET'),
         secure = True
     )
 
+    # Registra as extensões com o app
+    csrf.init_app(app)
     limiter.init_app(app)
+
+    # --- REGISTRA O NOVO FILTRO NO AMBIENTE JINJA ---
+    app.jinja_env.filters['nl2br'] = nl2br
 
     from . import db
     db.init_app(app)
@@ -82,5 +107,5 @@ def create_app(test_config=None):
 
     from . import routes_admin
     routes_admin.register_admin_routes(app)
-    
+
     return app

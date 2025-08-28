@@ -43,7 +43,7 @@
             </div>
             {% endif %}
 
-            <p style="margin-top: 20px;">{{ relato.descricao }}</p>
+            <p style="margin-top: 20px;">{{ relato.descricao | nl2br }}</p>
         </div>
         <footer>
             <div class="vote-section" data-relato-id="{{ relato.id }}">
@@ -80,6 +80,7 @@
                         em {{ comentario.criado_em.strftime('%d/%m/%Y %H:%M') }}
                     </p>
                     <form action="{{ url_for('report_comment', comment_id=comentario.id) }}" method="POST" class="report-form">
+                        {{ report_form.csrf_token }}
                         <button type="submit" class="btn-report" title="Denunciar este comentário">Denunciar</button>
                     </form>
                 </div>
@@ -93,12 +94,16 @@
         {% if g.user %}
             <form method="POST" action="{{ url_for('add_comment', relato_id=relato.id) }}" class="comment-form" novalidate>
                 <h3>Deixe seu Comentário</h3>
+                {{ comment_form.csrf_token }}
                 <div class="form-group">
                     <div class="form-label-group">
-                        <label for="texto">Comentário:</label>
-                        <span id="texto-counter" class="char-counter">500</span>
+                        {{ comment_form.texto.label }}
+                        <span id="texto-counter" class="char-counter">1000</span>
                     </div>
-                    <textarea id="texto" name="texto" rows="4" required maxlength="500" oninput="updateCounter('texto', 500)"></textarea>
+                    {{ comment_form.texto(rows="4", required=True, maxlength="1000", oninput="updateCounter('texto', 1000)") }}
+                    {% for error in comment_form.texto.errors %}
+                        <span class="error-message">{{ error }}</span>
+                    {% endfor %}
                 </div>
 
                 {% if show_captcha %}
@@ -107,7 +112,7 @@
                 </div>
                 {% endif %}
 
-                <button type="submit">Enviar Comentário</button>
+                {{ comment_form.submit(class="btn-submit") }}
             </form>
         {% else %}
             <p class="login-prompt">
@@ -120,6 +125,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const voteSection = document.querySelector('.vote-section');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Pega o token do layout
+
         if (voteSection) {
             voteSection.addEventListener('click', async (e) => {
                 const button = e.target.closest('.btn-vote');
@@ -139,7 +146,12 @@
                 }
 
                 try {
-                    const response = await fetch(endpoint, { method: 'POST' });
+                    const response = await fetch(endpoint, { 
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrfToken // <-- TOKEN ENVIADO NO CABEÇALHO
+                        }
+                    });
                     const data = await response.json();
                     
                     const messageEl = document.getElementById(messageElId);
@@ -166,8 +178,7 @@
             });
         }
         
-        // A função de contador de caracteres para o campo de autor não é mais necessária aqui
-        updateCounter('texto', 500);
+        updateCounter('texto', 1000);
     });
 
     function updateCounter(fieldId, maxLength) {

@@ -46,7 +46,7 @@
             </thead>
             <tbody>
                 {% for relato in relatos %}
-                <tr class="status-{{ 'aprovado' if relato.aprovado == 1 else 'pendente' }}">
+                <tr class="status-{{ 'aprovado' if relato.aprovado else 'pendente' }}">
                     <td>{{ relato.id }}</td>
                     <td>{{ relato.titulo }}</td>
                     <td>{{ relato.local }}</td>
@@ -67,7 +67,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if relato.aprovado == 1 %}
+                        {% if relato.aprovado %}
                             <span class="status-badge status-aprovado">Aprovado</span>
                         {% else %}
                             <span class="status-badge status-pendente">Pendente</span>
@@ -76,12 +76,14 @@
                     <td class="actions-cell">
                         <button class="btn-action btn-view" onclick="toggleDescription({{ relato.id }})">Ver Conteúdo</button>
 
-                        {% if relato.aprovado == 0 %}
+                        {% if not relato.aprovado %}
                         <form action="{{ url_for('approve_relato', relato_id=relato.id, filtro=filtro_ativo) }}" method="POST">
+                            {{ action_form.csrf_token }}
                             <button type="submit" class="btn-action btn-approve">Aprovar</button>
                         </form>
                         {% endif %}
                         <form action="{{ url_for('delete_relato', relato_id=relato.id, filtro=filtro_ativo) }}" method="POST">
+                            {{ action_form.csrf_token }}
                             <button type="submit" class="btn-action btn-delete" onclick="return confirm('Tem certeza que deseja excluir este relato? Esta ação não pode ser desfeita.');">Excluir</button>
                         </form>
                     </td>
@@ -90,7 +92,7 @@
                     <td colspan="7">
                         <div class="relato-description-content">
                             <strong>Descrição Completa:</strong>
-                            <p>{{ relato.descricao }}</p>
+                            <p>{{ relato.descricao | nl2br }}</p>
                             
                             {% if relato.audio_url %}
                             <div class="admin-audio-player" style="margin-top: 15px;">
@@ -115,21 +117,23 @@
                                 {% if comentarios[relato.id] %}
                                     <ul class="admin-comments-list">
                                         {% for comentario in comentarios[relato.id] %}
-                                        <li class="admin-comment-item {% if comentario.denunciado == 1 %}denunciado{% endif %}">
+                                        <li class="admin-comment-item {% if comentario.denunciado %}denunciado{% endif %}">
                                             <div class="admin-comment-meta">
                                                 <strong title="IP: {{ comentario.ip_address or 'N/A' }} | Cidade: {{ comentario.city or 'N/A' }}">{{ comentario.autor }}:</strong>
                                                 <span>{{ comentario.texto }}</span>
-                                                {% if comentario.denunciado == 1 %}
+                                                {% if comentario.denunciado %}
                                                     <span class="denuncia-flag">(DENUNCIADO)</span>
                                                 {% endif %}
                                             </div>
                                             <div class="admin-comment-actions">
-                                                {% if comentario.denunciado == 1 %}
+                                                {% if comentario.denunciado %}
                                                 <form action="{{ url_for('unreport_comment', comment_id=comentario.id, filtro=filtro_ativo) }}" method="POST">
+                                                    {{ action_form.csrf_token }}
                                                     <button type="submit" class="btn-action btn-unreport" title="Remover denúncia e manter o comentário">Ignorar Denúncia</button>
                                                 </form>
                                                 {% endif %}
                                                 <form action="{{ url_for('delete_comment', comment_id=comentario.id, filtro=filtro_ativo) }}" method="POST">
+                                                    {{ action_form.csrf_token }}
                                                     <button type="submit" class="btn-action btn-delete-comment" onclick="return confirm('Tem certeza que deseja excluir este comentário?');">Excluir</button>
                                                 </form>
                                             </div>

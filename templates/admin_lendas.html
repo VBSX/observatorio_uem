@@ -39,6 +39,7 @@
                     <td class="actions-cell">
                         <a href="{{ url_for('edit_lenda', lenda_id=lenda.id) }}" class="btn-action btn-view">Editar</a>
                         <form action="{{ url_for('delete_lenda', lenda_id=lenda.id) }}" method="POST">
+                            {{ action_form.csrf_token }}
                             <button type="submit" class="btn-action btn-delete" onclick="return confirm('Tem certeza que deseja excluir esta lenda?');">Excluir</button>
                         </form>
                     </td>
