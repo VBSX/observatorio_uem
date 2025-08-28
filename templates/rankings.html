@@ -1,0 +1,40 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="rankings-container">
+    <h1>Rankings do Observatório</h1>
+    <p>Descubra os relatos e locais que mais se destacam na comunidade.</p>
+
+    <div class="rankings-grid">
+        <div class="ranking-card">
+            <h2>🏆 Top 10 Relatos Mais Acreditados</h2>
+            <ol class="ranking-list">
+                {% for relato in top_relatos %}
+                    <li>
+                        <a href="{{ url_for('relato', relato_id=relato.id) }}">
+                            <span class="ranking-title">{{ relato.titulo }}</span>
+                            <span class="ranking-count">{{ relato.votos_acredito }} votos</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li>Nenhum relato votado ainda.</li>
+                {% endfor %}
+            </ol>
+        </div>
+
+        <div class="ranking-card">
+            <h2>📍 Top 10 Locais Mais Assombrados</h2>
+            <ol class="ranking-list">
+                {% for local in top_locais %}
+                    <li>
+                        <span class="ranking-title">{{ local.local }}</span>
+                        <span class="ranking-count">{{ local.total_relatos }} relatos</span>
+                    </li>
+                {% else %}
+                    <li>Nenhum local com relatos aprovados.</li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}

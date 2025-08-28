@@ -314,6 +314,8 @@ def register_public_routes(app, limiter):
 
     @app.route('/lenda/<int:lenda_id>')
     def lenda(lenda_id):
+        
+        
         db = get_db()
         cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute('SELECT * FROM lendas WHERE id = %s', (lenda_id,))
@@ -323,3 +325,36 @@ def register_public_routes(app, limiter):
             flash("Lenda não encontrada.")
             return safe_redirect('lendas')
         return render_template('lenda.html', lenda=lenda)
+    @app.route('/rankings')
+    def rankings():
+        db = get_db()
+        cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+        # Query para buscar os 10 relatos mais acreditados
+        cur.execute(
+            """
+            SELECT id, titulo, votos_acredito
+            FROM relatos
+            WHERE aprovado = TRUE AND votos_acredito > 0
+            ORDER BY votos_acredito DESC, criado_em DESC
+            LIMIT 10;
+            """
+        )
+        top_relatos = cur.fetchall()
+
+        # Query para buscar os 10 locais com mais relatos
+        cur.execute(
+            """
+            SELECT local, COUNT(id) as total_relatos
+            FROM relatos
+            WHERE aprovado = TRUE
+            GROUP BY local
+            ORDER BY total_relatos DESC, local ASC
+            LIMIT 10;
+            """
+        )
+        top_locais = cur.fetchall()
+
+        cur.close()
+
+        return render_template('rankings.html', top_relatos=top_relatos, top_locais=top_locais)
