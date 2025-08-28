@@ -86,6 +86,14 @@ def register_admin_routes(app):
     def delete_relato(relato_id):
         db = get_db()
         cur = db.cursor()
+        cur.execute('SELECT imagem_url FROM relatos WHERE id = %s', (relato_id,))
+        image_row = cur.fetchone()
+        if image_row and image_row[0]:
+            delete_cloudinary_midia(image_row[0])
+        cur.execute('SELECT audio_url FROM relatos WHERE id = %s', (relato_id,))
+        audio_row = cur.fetchone()
+        if audio_row and audio_row[0]:
+            delete_cloudinary_midia(audio_row[0], resource_type='audio')
         cur.execute('DELETE FROM relatos WHERE id = %s', (relato_id,))
         db.commit()
         cur.close()
@@ -212,8 +220,25 @@ def register_admin_routes(app):
     def delete_lenda(lenda_id):
         db = get_db()
         cur = db.cursor()
+        cur.execute('SELECT imagem_url FROM lendas WHERE id = %s', (lenda_id,))
+        image_row = cur.fetchone()
+        if image_row and image_row[0]:
+            delete_cloudinary_midia(image_row[0])
         cur.execute('DELETE FROM lendas WHERE id = %s', (lenda_id,))
         db.commit()
         cur.close()
         flash(f'Lenda #{lenda_id} foi excluída com sucesso!')
         return safe_redirect('admin_lendas')
+    
+    def delete_cloudinary_midia(url, resource_type='image'):
+        """Deleta uma midia do Cloudinary dado seu URL completo."""
+        try:
+            parts = url.split('/')
+            public_id_with_ext = parts[-1]
+            public_id = '/'.join(parts[-2:]).split('.')[0]  # Inclui a pasta
+            if resource_type == 'image':
+                cloudinary.uploader.destroy(public_id)
+            elif resource_type == 'video' or resource_type == 'audio':
+                cloudinary.uploader.destroy(public_id, resource_type='video')
+        except Exception as e:
+            current_app.logger.error(f"Erro ao deletar midia do Cloudinary: {e}")
