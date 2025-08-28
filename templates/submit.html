@@ -55,8 +55,10 @@
         <div class="form-group">
             <label for="imagem">Enviar Imagem (Opcional)</label>
             <input type="file" name="imagem" id="imagem" accept="image/png, image/jpeg, image/gif">
+            <label for="audio">Áudio (opcional):</label>
+            <input type="file" id="audio" name="audio" accept="audio/*">
         </div>
-        
+
         {# O widget do reCAPTCHA continua aqui dentro, para ser condicional #}
         {% if show_captcha %}
         <div class="form-group">

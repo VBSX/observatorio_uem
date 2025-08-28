@@ -39,6 +39,7 @@
                     <th>Título</th>
                     <th>Local</th>
                     <th>Imagem</th>
+                    <th>Áudio</th>
                     <th>Status</th>
                     <th style="width: 280px;">Ações</th>
                 </tr>
@@ -54,6 +55,13 @@
                             <a href="{{ relato.imagem_url }}" target="_blank" title="Clique para ver a imagem completa">
                                 <img src="{{ relato.imagem_url }}" class="admin-thumbnail" alt="Miniatura do relato">
                             </a>
+                        {% else %}
+                            <span class="no-image">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if relato.audio_url %}
+                            <a href="{{ relato.audio_url }}" target="_blank" title="Ouvir áudio em nova aba">Ouvir</a>
                         {% else %}
                             <span class="no-image">N/A</span>
                         {% endif %}
@@ -79,10 +87,19 @@
                     </td>
                 </tr>
                 <tr class="relato-description-row" id="desc-{{ relato.id }}" style="display: none;">
-                    <td colspan="6">
+                    <td colspan="7">
                         <div class="relato-description-content">
                             <strong>Descrição Completa:</strong>
                             <p>{{ relato.descricao }}</p>
+                            
+                            {% if relato.audio_url %}
+                            <div class="admin-audio-player" style="margin-top: 15px;">
+                                <strong>Áudio do Relato:</strong>
+                                <audio controls src="{{ relato.audio_url }}" style="width: 100%; margin-top: 5px;">
+                                    Seu navegador não suporta o elemento de áudio.
+                                </audio>
+                            </div>
+                            {% endif %}
 
                             <div class="admin-metadata-section">
                                 <strong>Metadados do Envio do Relato:</strong>
@@ -128,7 +145,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" style="text-align: center;">Nenhum relato encontrado para este filtro.</td>
+                    <td colspan="7" style="text-align: center;">Nenhum relato encontrado para este filtro.</td>
                 </tr>
                 {% endfor %}
             </tbody>

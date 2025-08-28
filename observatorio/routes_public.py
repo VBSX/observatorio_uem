@@ -64,6 +64,7 @@ def register_public_routes(app, limiter):
                                categorias=categorias_config,
                                search_query=search_query)
 
+
     @app.route('/submit', methods=('GET', 'POST'))
     @limiter.limit("5 per minute")
     def submit():
@@ -72,16 +73,21 @@ def register_public_routes(app, limiter):
         site_key = current_app.config['RECAPTCHA_SITE_KEY']
         show_captcha = not current_app.debug
 
+        # Define os limites de tamanho em Megabytes
+        MAX_IMAGE_SIZE_MB = 5
+        MAX_AUDIO_SIZE_MB = 10
+        # Converte para bytes
+        MAX_IMAGE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024
+        MAX_AUDIO_BYTES = MAX_AUDIO_SIZE_MB * 1024 * 1024
+
         if request.method == 'POST':
-            # Extrai os dados do formulário ANTES de os usar
             titulo = request.form.get('titulo')
             descricao = request.form.get('descricao')
             local_selecionado = request.form.get('local')
             categoria = request.form.get('categoria')
             outro_local_texto = request.form.get('outro_local_texto', '').strip()
             imagem_file = request.files.get('imagem')
-
-            # ... (Lógica do reCAPTCHA aqui, se aplicável) ...
+            audio_file = request.files.get('audio')
 
             if not titulo or not descricao or not categoria:
                 flash('Todos os campos são obrigatórios!')
@@ -93,13 +99,54 @@ def register_public_routes(app, limiter):
 
             imagem_url = None
             if imagem_file and imagem_file.filename != '':
+                # Validação do tamanho da imagem
+                imagem_file.seek(0, 2) # Move o cursor para o fim do arquivo
+                file_size = imagem_file.tell() # Pega a posição (tamanho em bytes)
+                imagem_file.seek(0) # Retorna o cursor para o início
+                if file_size > MAX_IMAGE_BYTES:
+                    flash(f'A imagem enviada é muito grande. O limite é de {MAX_IMAGE_SIZE_MB} MB.')
+                    return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data=request.form, site_key=site_key, show_captcha=show_captcha)
+
                 try:
-                    upload_result = cloudinary.uploader.upload(imagem_file, folder="observatorio_uem")
+                    upload_result = cloudinary.uploader.upload(
+                        imagem_file,
+                        folder="observatorio_uem_imagens",
+                        transformation=[
+                            {'width': 1920, 'height': 1080, 'crop': 'limit'},
+                            {'quality': 'auto', 'fetch_format': 'auto'}
+                        ]
+                    )
                     imagem_url = upload_result.get('secure_url')
-                    if not imagem_url: raise Exception("Falha ao obter URL do Cloudinary.")
+                    if not imagem_url: raise Exception("Falha ao obter URL da imagem do Cloudinary.")
                 except Exception as e:
-                    current_app.logger.error(f"Erro no upload para o Cloudinary: {e}")
+                    current_app.logger.error(f"Erro no upload da imagem: {e}")
                     flash('Houve um erro ao fazer o upload da imagem. Tente novamente.')
+                    return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data=request.form, site_key=site_key, show_captcha=show_captcha)
+
+            audio_url = None
+            if audio_file and audio_file.filename != '':
+                # Validação do tamanho do áudio
+                audio_file.seek(0, 2)
+                file_size = audio_file.tell()
+                audio_file.seek(0)
+                if file_size > MAX_AUDIO_BYTES:
+                    flash(f'O arquivo de áudio é muito grande. O limite é de {MAX_AUDIO_SIZE_MB} MB.')
+                    return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data=request.form, site_key=site_key, show_captcha=show_captcha)
+
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        audio_file,
+                        folder="observatorio_uem_audios",
+                        resource_type="video",
+                        transformation=[
+                            {'audio_codec': 'mp3', 'bit_rate': '64k'}
+                        ]
+                    )
+                    audio_url = upload_result.get('secure_url')
+                    if not audio_url: raise Exception("Falha ao obter URL do áudio do Cloudinary.")
+                except Exception as e:
+                    current_app.logger.error(f"Erro no upload do áudio: {e}")
+                    flash('Houve um erro ao fazer o upload do áudio. Tente novamente.')
                     return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data=request.form, site_key=site_key, show_captcha=show_captcha)
 
             local_final = local_selecionado
@@ -112,9 +159,10 @@ def register_public_routes(app, limiter):
             ip_address, city, user_agent = get_request_metadata()
             db = get_db()
             cur = db.cursor()
+            
             cur.execute(
-                'INSERT INTO relatos (titulo, descricao, local, categoria, imagem_url, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)',
-                (titulo, descricao, local_final, categoria, imagem_url, ip_address, city, user_agent)
+                'INSERT INTO relatos (titulo, descricao, local, categoria, imagem_url, audio_url, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                (titulo, descricao, local_final, categoria, imagem_url, audio_url, ip_address, city, user_agent)
             )
             db.commit()
             cur.close()
@@ -123,7 +171,7 @@ def register_public_routes(app, limiter):
 
         return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data={}, site_key=site_key, show_captcha=show_captcha)
 
-
+    
     @app.route('/relato/<int:relato_id>')
     def relato(relato_id):
         db = get_db()

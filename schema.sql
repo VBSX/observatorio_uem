@@ -1,12 +1,5 @@
--- Remove tabelas antigas se existirem, para garantir uma inicialização limpa
-DROP TABLE IF EXISTS lendas CASCADE;
-DROP TABLE IF EXISTS testemunhas CASCADE;
-DROP TABLE IF EXISTS votos CASCADE;
-DROP TABLE IF EXISTS comentarios CASCADE;
-DROP TABLE IF EXISTS relatos CASCADE;
-
--- Cria a tabela principal de relatos
-CREATE TABLE relatos (
+-- Cria a tabela principal de relatos, somente se ela não existir
+CREATE TABLE IF NOT EXISTS relatos (
     id SERIAL PRIMARY KEY,
     titulo VARCHAR(100) NOT NULL,
     descricao TEXT NOT NULL,
@@ -23,8 +16,11 @@ CREATE TABLE relatos (
     user_agent VARCHAR(255)
 );
 
--- Cria a tabela de comentários, com uma chave estrangeira para relatos
-CREATE TABLE comentarios (
+-- Adiciona a coluna de áudio à tabela de relatos, somente se ela não existir
+ALTER TABLE relatos ADD COLUMN IF NOT EXISTS audio_url TEXT;
+
+-- Cria a tabela de comentários, somente se ela não existir
+CREATE TABLE IF NOT EXISTS comentarios (
     id SERIAL PRIMARY KEY,
     relato_id INTEGER NOT NULL,
     autor VARCHAR(50) NOT NULL,
@@ -37,8 +33,8 @@ CREATE TABLE comentarios (
     FOREIGN KEY (relato_id) REFERENCES relatos (id) ON DELETE CASCADE
 );
 
--- Cria a tabela de votos
-CREATE TABLE votos (
+-- Cria a tabela de votos, somente se ela não existir
+CREATE TABLE IF NOT EXISTS votos (
     id SERIAL PRIMARY KEY,
     relato_id INTEGER NOT NULL,
     session_id VARCHAR(36) NOT NULL,
@@ -50,8 +46,8 @@ CREATE TABLE votos (
     FOREIGN KEY (relato_id) REFERENCES relatos (id) ON DELETE CASCADE
 );
 
--- Cria a tabela de testemunhas
-CREATE TABLE testemunhas (
+-- Cria a tabela de testemunhas, somente se ela não existir
+CREATE TABLE IF NOT EXISTS testemunhas (
     id SERIAL PRIMARY KEY,
     relato_id INTEGER NOT NULL,
     session_id VARCHAR(36) NOT NULL,
@@ -62,8 +58,8 @@ CREATE TABLE testemunhas (
     FOREIGN KEY (relato_id) REFERENCES relatos (id) ON DELETE CASCADE
 );
 
--- Cria a tabela de lendas
-CREATE TABLE lendas (
+-- Cria a tabela de lendas, somente se ela não existir
+CREATE TABLE IF NOT EXISTS lendas (
     id SERIAL PRIMARY KEY,
     titulo VARCHAR(100) NOT NULL,
     descricao TEXT NOT NULL,

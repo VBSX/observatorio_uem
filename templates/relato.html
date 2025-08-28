@@ -26,7 +26,17 @@
                 </a>
             </div>
             {% endif %}
-            <p>{{ relato.descricao }}</p>
+
+            {% if relato.audio_url %}
+            <div class="relato-audio-container" style="margin-top: 20px;">
+                <p><strong>Áudio do relato:</strong></p>
+                <audio controls src="{{ relato.audio_url }}" style="width: 100%;">
+                    Seu navegador não suporta o elemento de áudio.
+                </audio>
+            </div>
+            {% endif %}
+
+            <p style="margin-top: 20px;">{{ relato.descricao }}</p>
         </div>
         <footer>
             <div class="vote-section" data-relato-id="{{ relato.id }}">
