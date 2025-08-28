@@ -1,0 +1,48 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="profile-container">
+    <header class="profile-header">
+        <img src="{{ user.profile_pic_url or url_for('static', filename='img/default_avatar.png') }}" alt="Foto de {{ user.nome }}" class="profile-avatar">
+        <div class="profile-info">
+            <h1>{{ user.nome }}</h1>
+            <p>Investigador desde: {{ user.criado_em.strftime('%d/%m/%Y') }}</p>
+            <p>Relatos enviados: {{ relatos|length }} | Comentários feitos: {{ comentarios|length }}</p>
+        </div>
+    </header>
+
+    <div class="profile-content">
+        <section>
+            <h2>Relatos Enviados</h2>
+            <ul class="profile-list">
+                {% for relato in relatos %}
+                    <li>
+                        <a href="{{ url_for('relato', relato_id=relato.id) }}">
+                            <span class="profile-list-title">{{ relato.titulo }}</span>
+                            <span class="profile-list-meta">{{ 'Aprovado' if relato.aprovado else 'Pendente' }} - {{ relato.criado_em.strftime('%d/%m/%Y') }}</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li>Este investigador ainda não enviou nenhum relato.</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section>
+            <h2>Últimos Comentários</h2>
+            <ul class="profile-list">
+                {% for comentario in comentarios %}
+                     <li>
+                        <a href="{{ url_for('relato', relato_id=comentario.relato_id) }}#comment-{{ comentario.id }}">
+                            <span class="profile-list-title">"{{ comentario.texto[:80] }}{{ '...' if comentario.texto|length > 80 else '' }}"</span>
+                            <span class="profile-list-meta">Em: {{ comentario.relato_titulo }}</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li>Este investigador ainda não fez nenhum comentário.</li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -1,7 +1,6 @@
 {% extends 'layout.html' %}
 
 {% block head_scripts %}
-    {# O script do Google só será carregado se show_captcha for verdadeiro #}
     {% if show_captcha %}
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     {% endif %}
@@ -9,6 +8,13 @@
 
 {% block content %}
     <h2>Relate sua Experiência Sobrenatural</h2>
+    
+    {% if g.user %}
+        <p class="form-notice">Você está logado como <strong>{{ g.user.nome }}</strong>. Seu relato será associado ao seu perfil.</p>
+    {% else %}
+        <p class="form-notice">Você não está logado. Seu relato será enviado anonimamente. <a href="{{ url_for('login') }}">Faça login</a> para que ele seja associado ao seu perfil.</p>
+    {% endif %}
+
     <form method="post" enctype="multipart/form-data" novalidate>
         <div class="form-group">
             <div class="form-label-group">
@@ -51,15 +57,16 @@
             <textarea name="descricao" placeholder="Conte os detalhes da sua experiência..." id="descricao" rows="8" required maxlength="2000" oninput="updateCounter('descricao', 2000)">{{ form_data.descricao or '' }}</textarea>
         </div>
 
-        <!-- CORREÇÃO: Campo de imagem movido para fora do bloco 'if' -->
         <div class="form-group">
             <label for="imagem">Enviar Imagem (Opcional)</label>
             <input type="file" name="imagem" id="imagem" accept="image/png, image/jpeg, image/gif">
+        </div>
+        
+        <div class="form-group">
             <label for="audio">Áudio (opcional):</label>
             <input type="file" id="audio" name="audio" accept="audio/*">
         </div>
 
-        {# O widget do reCAPTCHA continua aqui dentro, para ser condicional #}
         {% if show_captcha %}
         <div class="form-group">
             <div class="g-recaptcha" data-sitekey="{{ site_key }}"></div>
@@ -72,34 +79,37 @@
     </form>
 
     <script>
-        // ... (seu script de contador de caracteres e de "Outro Local" continua aqui) ...
-        const localSelect = document.getElementById('local-select');
-        const outroLocalContainer = document.getElementById('outro-local-container');
-        const outroLocalInput = document.getElementById('outro-local-texto');
-
-        function toggleOutroLocal() {
-            if (localSelect.value === 'Outro Local / Não Listado') {
-                outroLocalContainer.style.display = 'block';
-                outroLocalInput.required = true;
-            } else {
-                outroLocalContainer.style.display = 'none';
-                outroLocalInput.required = false;
-            }
-        }
-        localSelect.addEventListener('change', toggleOutroLocal);
-        
-        function updateCounter(fieldId, maxLength) {
-            const field = document.getElementById(fieldId);
-            const counter = document.getElementById(fieldId + '-counter');
-            const remaining = maxLength - field.value.length;
-            counter.textContent = remaining;
-            counter.style.color = remaining < 20 ? (remaining < 0 ? '#ff0000' : '#ffc107') : '#aaa';
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
+            const localSelect = document.getElementById('local-select');
+            const outroLocalContainer = document.getElementById('outro-local-container');
+            const outroLocalInput = document.getElementById('outro-local-texto');
+
+            function toggleOutroLocal() {
+                if (localSelect.value === 'Outro Local / Não Listado') {
+                    outroLocalContainer.style.display = 'block';
+                    outroLocalInput.required = true;
+                } else {
+                    outroLocalContainer.style.display = 'none';
+                    outroLocalInput.required = false;
+                }
+            }
+
+            localSelect.addEventListener('change', toggleOutroLocal);
+            
+            // Inicializa o estado do campo "Outro Local" e dos contadores
             toggleOutroLocal();
             updateCounter('titulo', 100);
             updateCounter('descricao', 2000);
         });
+
+        function updateCounter(fieldId, maxLength) {
+            const field = document.getElementById(fieldId);
+            const counter = document.getElementById(fieldId + '-counter');
+            if (field && counter) {
+                const remaining = maxLength - field.value.length;
+                counter.textContent = remaining;
+                counter.style.color = remaining < 20 ? (remaining < 0 ? '#ff0000' : '#ffc107') : '#aaa';
+            }
+        }
     </script>
 {% endblock %}

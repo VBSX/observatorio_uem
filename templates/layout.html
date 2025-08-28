@@ -16,19 +16,31 @@
 </head>
 <body>
     <header>
-        <div class="container">
-            <h1><a href="{{ url_for('index') }}">Observatório Sobrenatural da UEM</a></h1>
-            <p class="slogan">O mapa do inexplicável na UEM.</p>
-            <div class="main-nav">
-                <a href="{{ url_for('index') }}">Mapa de Relatos</a>
-                <a href="{{ url_for('lendas') }}">Lendas Urbanas</a>
-                <a href="{{ url_for('rankings') }}">Rankings</a>
+        <div class="container header-content">
+            <div class="site-identity">
+                <h1><a href="{{ url_for('index') }}">Observatório Sobrenatural da UEM</a></h1>
+                <p class="slogan">O mapa do inexplicável na UEM.</p>
             </div>
-            <div class="social-link">
-                <a href="https://instagram.com/observatorio_uem" target="_blank" rel="noopener noreferrer" title="Siga-nos no Instagram">
-                    <svg class="social-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-                </a>
-            </div>
+            <nav class="header-nav">
+                <div class="main-nav">
+                    <a href="{{ url_for('index') }}">Mapa</a>
+                    <a href="{{ url_for('lendas') }}">Lendas</a>
+                    <a href="{{ url_for('rankings') }}">Rankings</a>
+                </div>
+                <div class="user-nav">
+                    {% if g.user %}
+                        <a href="{{ url_for('profile', user_id=g.user.id) }}">Meu Perfil</a>
+                        <a href="{{ url_for('logout') }}">Sair</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn-login">Login</a>
+                    {% endif %}
+                </div>
+                <div class="social-link">
+                    <a href="https://instagram.com/observatorio_uem" target="_blank" rel="noopener noreferrer" title="Siga-nos no Instagram">
+                        <svg class="social-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    </a>
+                </div>
+            </nav>
         </div>
     </header>
     

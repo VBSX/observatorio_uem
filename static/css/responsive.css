@@ -1,12 +1,42 @@
 /* Media Queries para Responsividade */
+
+@media (max-width: 900px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .header-nav {
+        flex-direction: column;
+        gap: 15px;
+        width: 100%;
+    }
+    .main-nav, .user-nav {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+
 @media (max-width: 768px) {
     .container { padding: 15px; }
-    header h1 a { font-size: 2em; }
-    .slogan { font-size: 0.9em; }
+    
+    /* Ajustes no Cabeçalho */
+    .site-identity h1 a {
+        font-size: 1.5em;
+    }
+    .slogan {
+        font-size: 0.85em;
+    }
+    .main-nav, .user-nav {
+        gap: 10px;
+    }
+    .main-nav a, .user-nav a {
+        padding: 8px 12px;
+    }
+
     .filter-container form { flex-direction: column; gap: 15px; align-items: stretch; }
     .filter-container .form-group { flex-direction: column; align-items: flex-start; gap: 5px; }
     .filter-container .form-group select, .btn-clear-filter { width: 100%; box-sizing: border-box; }
-    #map { height: 632px; }
+    #map { height: 450px; }
     .btn-submit { padding: 12px 20px; font-size: 1em; }
     .relato-full header h1 { font-size: 1.6em; }
     .btn-vote { padding: 8px 15px; margin: 0 5px; font-size: 0.9em; }
@@ -14,10 +44,29 @@
     .comment-author { font-size: 0.85em; }
     .comment p { font-size: 0.9em; }
 }
+
 @media (max-width: 480px) {
-    header h1 a { font-size: 1.8em; }
-    .slogan { font-size: 0.8em; }
-    #map { height: 632px; }
+    .site-identity h1 a {
+        font-size: 1.3em;
+        text-align: center;
+    }
+    .slogan {
+        display: none;
+    }
+    .header-nav {
+        gap: 10px;
+    }
+    .main-nav, .user-nav {
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+    .main-nav a, .user-nav a {
+        width: 80%;
+        text-align: center;
+    }
+
+    #map { height: 400px; }
     .btn-vote { display: block; width: calc(100% - 20px); margin: 10px auto; }
     .vote-section p { font-size: 0.85em; }
 

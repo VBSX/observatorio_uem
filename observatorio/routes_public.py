@@ -13,26 +13,79 @@ import cloudinary.uploader
 import requests
 import psycopg2.extras
 
+# Para a funcionalidade de login, instale a Authlib: pip install Authlib
+from authlib.integrations.flask_client import OAuth
+
 from .db import get_db
 from .utils import get_request_metadata, safe_redirect
 
 def register_public_routes(app, limiter):
     """Registra todas as rotas públicas na instância principal do Flask."""
 
+    oauth = OAuth(app)
+    google = oauth.register(
+        name='google',
+        client_id=app.config['GOOGLE_CLIENT_ID'],
+        client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_kwargs={'scope': 'openid email profile'}
+    )
+
+    @app.before_request
+    def load_logged_in_user():
+        user_id = session.get('user_id')
+        g.user = None
+        if user_id is not None:
+            db = get_db()
+            cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+            g.user = cur.fetchone()
+            cur.close()
+
+    @app.route('/login')
+    def login():
+        redirect_uri = url_for('authorize', _external=True)
+        return google.authorize_redirect(redirect_uri)
+
+    @app.route('/authorize')
+    def authorize():
+        token = google.authorize_access_token()
+        user_info = google.parse_id_token(token, nonce=session.get('nonce'))
+        db = get_db()
+        cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute('SELECT * FROM users WHERE google_id = %s', (user_info['sub'],))
+        user = cur.fetchone()
+        if user is None:
+            cur.execute(
+                'INSERT INTO users (google_id, nome, email, profile_pic_url) VALUES (%s, %s, %s, %s) RETURNING id',
+                (user_info['sub'], user_info['name'], user_info['email'], user_info['picture'])
+            )
+            user_id = cur.fetchone()['id']
+            db.commit()
+        else:
+            user_id = user['id']
+        cur.close()
+        session['user_id'] = user_id
+        flash("Login realizado com sucesso!")
+        return redirect(url_for('index'))
+
+    @app.route('/logout')
+    def logout():
+        session.clear()
+        flash("Você foi desconectado.")
+        return redirect(url_for('index'))
+
     @app.route('/')
     def index():
         db = get_db()
         cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
         conditions = ['aprovado = %s']
         params = [True]
-        
         filter_category = request.args.get('categoria')
         filter_period = request.args.get('periodo')
         search_query = request.args.get('q', '').strip()
         categorias_config = current_app.config['CATEGORIAS']
         locais_uem_config = current_app.config['LOCAIS_UEM']
-
         if filter_category and filter_category in categorias_config:
             conditions.append('categoria = %s')
             params.append(filter_category)
@@ -42,12 +95,10 @@ def register_public_routes(app, limiter):
             conditions.append('(LOWER(titulo) LIKE %s OR LOWER(descricao) LIKE %s)')
             search_term = f"%{search_query.lower()}%"
             params.extend([search_term, search_term])
-        
         query = 'SELECT * FROM relatos WHERE ' + ' AND '.join(conditions) + ' ORDER BY id DESC'
         cur.execute(query, tuple(params))
         relatos_db = cur.fetchall()
         cur.close()
-
         relatos_agrupados = defaultdict(list)
         default_coords = locais_uem_config.get("Outro Local / Não Listado", [-23.4065, -51.9395])
         for relato in relatos_db:
@@ -57,13 +108,10 @@ def register_public_routes(app, limiter):
             coords = default_coords if local_key.startswith('Outro:') else locais_uem_config.get(local_key, default_coords)
             coord_key = tuple(coords)
             relatos_agrupados[coord_key].append(relato_dict)
-            
         locais_para_mapa = [{"lat": c[0], "lon": c[1], "relatos": r} for c, r in relatos_agrupados.items()]
         return render_template('index.html',
                                locais_para_mapa=locais_para_mapa,
-                               categorias=categorias_config,
-                               search_query=search_query)
-
+                               categorias=categorias_config)
 
     @app.route('/submit', methods=('GET', 'POST'))
     @limiter.limit("5 per minute")
@@ -72,11 +120,8 @@ def register_public_routes(app, limiter):
         categorias_config = current_app.config['CATEGORIAS']
         site_key = current_app.config['RECAPTCHA_SITE_KEY']
         show_captcha = not current_app.debug
-
-        # Define os limites de tamanho em Megabytes
         MAX_IMAGE_SIZE_MB = 5
         MAX_AUDIO_SIZE_MB = 10
-        # Converte para bytes
         MAX_IMAGE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024
         MAX_AUDIO_BYTES = MAX_AUDIO_SIZE_MB * 1024 * 1024
 
@@ -99,70 +144,47 @@ def register_public_routes(app, limiter):
 
             imagem_url = None
             if imagem_file and imagem_file.filename != '':
-                # Validação do tamanho da imagem
-                imagem_file.seek(0, 2) # Move o cursor para o fim do arquivo
-                file_size = imagem_file.tell() # Pega a posição (tamanho em bytes)
-                imagem_file.seek(0) # Retorna o cursor para o início
+                imagem_file.seek(0, 2)
+                file_size = imagem_file.tell()
+                imagem_file.seek(0)
                 if file_size > MAX_IMAGE_BYTES:
                     flash(f'A imagem enviada é muito grande. O limite é de {MAX_IMAGE_SIZE_MB} MB.')
                     return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data=request.form, site_key=site_key, show_captcha=show_captcha)
-
                 try:
-                    upload_result = cloudinary.uploader.upload(
-                        imagem_file,
-                        folder="observatorio_uem_imagens",
-                        transformation=[
-                            {'width': 1920, 'height': 1080, 'crop': 'limit'},
-                            {'quality': 'auto', 'fetch_format': 'auto'}
-                        ]
-                    )
+                    upload_result = cloudinary.uploader.upload(imagem_file, folder="observatorio_uem_imagens", transformation=[{'width': 1920, 'height': 1080, 'crop': 'limit'}, {'quality': 'auto', 'fetch_format': 'auto'}])
                     imagem_url = upload_result.get('secure_url')
-                    if not imagem_url: raise Exception("Falha ao obter URL da imagem do Cloudinary.")
                 except Exception as e:
                     current_app.logger.error(f"Erro no upload da imagem: {e}")
-                    flash('Houve um erro ao fazer o upload da imagem. Tente novamente.')
+                    flash('Houve um erro ao fazer o upload da imagem.')
                     return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data=request.form, site_key=site_key, show_captcha=show_captcha)
 
             audio_url = None
             if audio_file and audio_file.filename != '':
-                # Validação do tamanho do áudio
                 audio_file.seek(0, 2)
                 file_size = audio_file.tell()
                 audio_file.seek(0)
                 if file_size > MAX_AUDIO_BYTES:
                     flash(f'O arquivo de áudio é muito grande. O limite é de {MAX_AUDIO_SIZE_MB} MB.')
                     return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data=request.form, site_key=site_key, show_captcha=show_captcha)
-
                 try:
-                    upload_result = cloudinary.uploader.upload(
-                        audio_file,
-                        folder="observatorio_uem_audios",
-                        resource_type="video",
-                        transformation=[
-                            {'audio_codec': 'mp3', 'bit_rate': '64k'}
-                        ]
-                    )
+                    upload_result = cloudinary.uploader.upload(audio_file, folder="observatorio_uem_audios", resource_type="video", transformation=[{'audio_codec': 'mp3', 'bit_rate': '64k'}])
                     audio_url = upload_result.get('secure_url')
-                    if not audio_url: raise Exception("Falha ao obter URL do áudio do Cloudinary.")
                 except Exception as e:
                     current_app.logger.error(f"Erro no upload do áudio: {e}")
-                    flash('Houve um erro ao fazer o upload do áudio. Tente novamente.')
+                    flash('Houve um erro ao fazer o upload do áudio.')
                     return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data=request.form, site_key=site_key, show_captcha=show_captcha)
 
-            local_final = local_selecionado
-            if local_selecionado == 'Outro Local / Não Listado':
-                if not outro_local_texto:
-                    flash('Você selecionou "Outro Local", por favor, especifique qual é.')
-                    return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data=request.form, site_key=site_key, show_captcha=show_captcha)
-                local_final = f"Outro: {outro_local_texto}"
-
+            local_final = outro_local_texto if local_selecionado == 'Outro Local / Não Listado' else local_selecionado
             ip_address, city, user_agent = get_request_metadata()
+            
+            # Define o user_id como o ID do usuário logado ou None se for anônimo
+            user_id = g.user['id'] if g.user else None
+            
             db = get_db()
             cur = db.cursor()
-            
             cur.execute(
-                'INSERT INTO relatos (titulo, descricao, local, categoria, imagem_url, audio_url, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
-                (titulo, descricao, local_final, categoria, imagem_url, audio_url, ip_address, city, user_agent)
+                'INSERT INTO relatos (titulo, descricao, local, categoria, imagem_url, audio_url, ip_address, city, user_agent, user_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                (titulo, descricao, local_final, categoria, imagem_url, audio_url, ip_address, city, user_agent, user_id)
             )
             db.commit()
             cur.close()
@@ -171,31 +193,27 @@ def register_public_routes(app, limiter):
 
         return render_template('submit.html', locais=locais_sorted, categorias=categorias_config, form_data={}, site_key=site_key, show_captcha=show_captcha)
 
-    
     @app.route('/relato/<int:relato_id>')
     def relato(relato_id):
         db = get_db()
         cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
-        cur.execute('SELECT * FROM relatos WHERE id = %s AND aprovado = TRUE', (relato_id,))
+        cur.execute('SELECT r.*, u.nome as autor_relato, u.id as autor_id FROM relatos r LEFT JOIN users u ON r.user_id = u.id WHERE r.id = %s AND r.aprovado = TRUE', (relato_id,))
         relato_db = cur.fetchone()
-        
         if relato_db is None:
             cur.close()
             flash("Este relato não foi encontrado ou ainda não foi aprovado.")
             return safe_redirect('index')
-            
-        cur.execute('SELECT * FROM comentarios WHERE relato_id = %s ORDER BY criado_em ASC', (relato_id,))
+        cur.execute("""
+            SELECT c.*, u.nome as autor, u.profile_pic_url, u.id as autor_id 
+            FROM comentarios c JOIN users u ON c.user_id = u.id 
+            WHERE c.relato_id = %s ORDER BY c.criado_em ASC
+        """, (relato_id,))
         comentarios_db = cur.fetchall()
-        
         cur.execute('SELECT tipo_voto FROM votos WHERE relato_id = %s AND session_id = %s', (relato_id, session.get('sid')))
         voto_usuario = cur.fetchone()
-        
         cur.execute('SELECT id FROM testemunhas WHERE relato_id = %s AND session_id = %s', (relato_id, session.get('sid')))
         testemunha_usuario = cur.fetchone()
-        
         cur.close()
-        
         return render_template('relato.html',
                                relato=relato_db,
                                comentarios=comentarios_db,
@@ -207,22 +225,63 @@ def register_public_routes(app, limiter):
     @app.route('/relato/<int:relato_id>/comment', methods=['POST'])
     @limiter.limit("10 per minute")
     def add_comment(relato_id):
-        autor = request.form.get('autor')
+        if g.user is None:
+            flash("Você precisa estar logado para comentar.")
+            return redirect(url_for('login'))
         texto = request.form.get('texto')
-        if not autor or not texto:
-            flash("Autor e comentário são obrigatórios!")
+        if not texto:
+            flash("O comentário não pode estar vazio!")
         else:
             ip_address, city, user_agent = get_request_metadata()
             db = get_db()
             cur = db.cursor()
             cur.execute(
-                'INSERT INTO comentarios (relato_id, autor, texto, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s, %s)',
-                (relato_id, autor, texto, ip_address, city, user_agent)
+                'INSERT INTO comentarios (relato_id, texto, user_id, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s, %s)',
+                (relato_id, texto, g.user['id'], ip_address, city, user_agent)
             )
             db.commit()
             cur.close()
             flash("Comentário adicionado!")
         return safe_redirect('relato', relato_id=relato_id)
+
+    @app.route('/profile/<int:user_id>')
+    def profile(user_id):
+        db = get_db()
+        cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+        user = cur.fetchone()
+        if user is None:
+            flash("Investigador não encontrado.")
+            return redirect(url_for('index'))
+        cur.execute('SELECT * FROM relatos WHERE user_id = %s ORDER BY criado_em DESC', (user_id,))
+        relatos = cur.fetchall()
+        cur.execute("""
+            SELECT c.*, r.titulo as relato_titulo
+            FROM comentarios c JOIN relatos r ON c.relato_id = r.id
+            WHERE c.user_id = %s ORDER BY c.criado_em DESC
+        """, (user_id,))
+        comentarios = cur.fetchall()
+        cur.close()
+        return render_template('profile.html', user=user, relatos=relatos, comentarios=comentarios)
+
+    @app.route('/rankings')
+    def rankings():
+        db = get_db()
+        cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("""
+            SELECT id, titulo, votos_acredito FROM relatos
+            WHERE aprovado = TRUE AND votos_acredito > 0
+            ORDER BY votos_acredito DESC, criado_em DESC LIMIT 10;
+        """)
+        top_relatos = cur.fetchall()
+        cur.execute("""
+            SELECT local, COUNT(id) as total_relatos FROM relatos
+            WHERE aprovado = TRUE GROUP BY local
+            ORDER BY total_relatos DESC, local ASC LIMIT 10;
+        """)
+        top_locais = cur.fetchall()
+        cur.close()
+        return render_template('rankings.html', top_relatos=top_relatos, top_locais=top_locais)
 
     @app.route('/report_comment/<int:comment_id>', methods=['POST'])
     @limiter.limit("15 per hour")
@@ -237,10 +296,9 @@ def register_public_routes(app, limiter):
             cur.close()
             flash('Obrigado por sua denúncia. O comentário será revisado pela moderação.')
             return safe_redirect('relato', relato_id=comment['relato_id'])
-        else:
-            cur.close()
-            flash('Comentário não encontrado.')
-            return safe_redirect('index')
+        cur.close()
+        flash('Comentário não encontrado.')
+        return safe_redirect('index')
 
     @app.route('/vote/<int:relato_id>/<string:tipo_voto>', methods=['POST'])
     @limiter.limit("30 per hour")
@@ -253,13 +311,9 @@ def register_public_routes(app, limiter):
         cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute('SELECT * FROM votos WHERE relato_id = %s AND session_id = %s', (relato_id, session['sid']))
         voto_existente = cur.fetchone()
-        cur.execute('SELECT * FROM testemunhas WHERE relato_id = %s AND session_id = %s', (relato_id, session['sid']))
-        testemunha_existente = cur.fetchone()
-
-        if voto_existente or testemunha_existente:
+        if voto_existente:
             cur.close()
             return jsonify({'success': False, 'message': 'Você já votou neste relato.'}), 403
-        
         ip_address, city, user_agent = get_request_metadata()
         cur.execute(
             'INSERT INTO votos (relato_id, session_id, tipo_voto, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s, %s)',
@@ -268,7 +322,6 @@ def register_public_routes(app, limiter):
         coluna = 'votos_acredito' if tipo_voto == 'acredito' else 'votos_cetico'
         cur.execute(f'UPDATE relatos SET {coluna} = {coluna} + 1 WHERE id = %s', (relato_id,))
         db.commit()
-        
         cur.execute('SELECT votos_acredito, votos_cetico FROM relatos WHERE id = %s', (relato_id,))
         contagens = cur.fetchone()
         cur.close()
@@ -281,15 +334,11 @@ def register_public_routes(app, limiter):
             session['sid'] = str(uuid.uuid4())
         db = get_db()
         cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute('SELECT * FROM votos WHERE relato_id = %s AND session_id = %s', (relato_id, session['sid']))
-        voto_existente = cur.fetchone()
         cur.execute('SELECT * FROM testemunhas WHERE relato_id = %s AND session_id = %s', (relato_id, session['sid']))
         testemunha_existente = cur.fetchone()
-
-        if voto_existente or testemunha_existente:
+        if testemunha_existente:
             cur.close()
             return jsonify({'success': False, 'message': 'Você já interagiu com este relato.'}), 403
-
         ip_address, city, user_agent = get_request_metadata()
         cur.execute(
             'INSERT INTO testemunhas (relato_id, session_id, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s)',
@@ -297,7 +346,6 @@ def register_public_routes(app, limiter):
         )
         cur.execute('UPDATE relatos SET votos_testemunha = votos_testemunha + 1 WHERE id = %s', (relato_id,))
         db.commit()
-        
         cur.execute('SELECT votos_testemunha FROM relatos WHERE id = %s', (relato_id,))
         nova_contagem = cur.fetchone()['votos_testemunha']
         cur.close()
@@ -314,8 +362,6 @@ def register_public_routes(app, limiter):
 
     @app.route('/lenda/<int:lenda_id>')
     def lenda(lenda_id):
-        
-        
         db = get_db()
         cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute('SELECT * FROM lendas WHERE id = %s', (lenda_id,))
@@ -325,36 +371,3 @@ def register_public_routes(app, limiter):
             flash("Lenda não encontrada.")
             return safe_redirect('lendas')
         return render_template('lenda.html', lenda=lenda)
-    @app.route('/rankings')
-    def rankings():
-        db = get_db()
-        cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
-        # Query para buscar os 10 relatos mais acreditados
-        cur.execute(
-            """
-            SELECT id, titulo, votos_acredito
-            FROM relatos
-            WHERE aprovado = TRUE AND votos_acredito > 0
-            ORDER BY votos_acredito DESC, criado_em DESC
-            LIMIT 10;
-            """
-        )
-        top_relatos = cur.fetchall()
-
-        # Query para buscar os 10 locais com mais relatos
-        cur.execute(
-            """
-            SELECT local, COUNT(id) as total_relatos
-            FROM relatos
-            WHERE aprovado = TRUE
-            GROUP BY local
-            ORDER BY total_relatos DESC, local ASC
-            LIMIT 10;
-            """
-        )
-        top_locais = cur.fetchall()
-
-        cur.close()
-
-        return render_template('rankings.html', top_relatos=top_relatos, top_locais=top_locais)

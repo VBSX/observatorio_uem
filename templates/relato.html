@@ -13,6 +13,13 @@
         <header>
             <h1>{{ relato.titulo }}</h1>
             <p class="relato-meta">
+                <strong>Enviado por:</strong>
+                {% if relato.autor_relato %}
+                    <a href="{{ url_for('profile', user_id=relato.autor_id) }}">{{ relato.autor_relato }}</a>
+                {% else %}
+                    Anônimo
+                {% endif %}
+                |
                 <strong>Local:</strong> {{ relato.local }} |
                 <strong>Categoria:</strong> {{ relato.categoria }} |
                 <strong>Data:</strong> {{ relato.criado_em.strftime('%d/%m/%Y') }}
@@ -64,9 +71,14 @@
         <h2>Comentários ({{ comentarios|length }})</h2>
         <div class="comments-list">
             {% for comentario in comentarios %}
-            <div class="comment">
+            <div class="comment" id="comment-{{ comentario.id }}">
                 <div class="comment-header">
-                    <p class="comment-author"><strong>{{ comentario.autor }}</strong> em {{ comentario.criado_em.strftime('%d/%m/%Y %H:%M') }}</p>
+                    <p class="comment-author">
+                        <a href="{{ url_for('profile', user_id=comentario.autor_id) }}">
+                            <strong>{{ comentario.autor }}</strong>
+                        </a> 
+                        em {{ comentario.criado_em.strftime('%d/%m/%Y %H:%M') }}
+                    </p>
                     <form action="{{ url_for('report_comment', comment_id=comentario.id) }}" method="POST" class="report-form">
                         <button type="submit" class="btn-report" title="Denunciar este comentário">Denunciar</button>
                     </form>
@@ -78,31 +90,30 @@
             {% endfor %}
         </div>
 
-        <form method="POST" action="{{ url_for('add_comment', relato_id=relato.id) }}" class="comment-form" novalidate>
-            <h3>Deixe seu Comentário</h3>
-            <div class="form-group">
-                <div class="form-label-group">
-                    <label for="autor">Seu Nome:</label>
-                    <span id="autor-counter" class="char-counter">50</span>
+        {% if g.user %}
+            <form method="POST" action="{{ url_for('add_comment', relato_id=relato.id) }}" class="comment-form" novalidate>
+                <h3>Deixe seu Comentário</h3>
+                <div class="form-group">
+                    <div class="form-label-group">
+                        <label for="texto">Comentário:</label>
+                        <span id="texto-counter" class="char-counter">500</span>
+                    </div>
+                    <textarea id="texto" name="texto" rows="4" required maxlength="500" oninput="updateCounter('texto', 500)"></textarea>
                 </div>
-                <input type="text" id="autor" name="autor" required maxlength="50" oninput="updateCounter('autor', 50)">
-            </div>
-            <div class="form-group">
-                <div class="form-label-group">
-                    <label for="texto">Comentário:</label>
-                    <span id="texto-counter" class="char-counter">500</span>
+
+                {% if show_captcha %}
+                <div class="form-group">
+                    <div class="g-recaptcha" data-sitekey="{{ site_key }}"></div>
                 </div>
-                <textarea id="texto" name="texto" rows="4" required maxlength="500" oninput="updateCounter('texto', 500)"></textarea>
-            </div>
+                {% endif %}
 
-            {% if show_captcha %}
-            <div class="form-group">
-                <div class="g-recaptcha" data-sitekey="{{ site_key }}"></div>
-            </div>
-            {% endif %}
-
-            <button type="submit">Enviar Comentário</button>
-        </form>
+                <button type="submit">Enviar Comentário</button>
+            </form>
+        {% else %}
+            <p class="login-prompt">
+                <a href="{{ url_for('login') }}">Faça login</a> para deixar um comentário.
+            </p>
+        {% endif %}
     </section>
 </div>
 
@@ -155,7 +166,7 @@
             });
         }
         
-        updateCounter('autor', 50);
+        // A função de contador de caracteres para o campo de autor não é mais necessária aqui
         updateCounter('texto', 500);
     });
 
