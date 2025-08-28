@@ -5,3 +5,6 @@ __pycache__/
 database.db
 /.vscode
 app.pyold
+instance/
+locais_uem - Copia.json
+locais_uemold.json
