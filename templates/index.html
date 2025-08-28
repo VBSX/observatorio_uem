@@ -3,9 +3,13 @@
 {% block content %}
     <div class="filter-container">
         <form method="GET" action="{{ url_for('index') }}">
+            <div class="form-group search-group">
+                <label for="q">Buscar por Palavra-Chave:</label>
+                <input type="search" name="q" id="q" placeholder="Ex: vulto, sussurros..." value="{{ request.args.get('q', '') }}">
+            </div>
             <div class="form-group">
                 <label for="categoria">Filtrar por Categoria:</label>
-                <select name="categoria" id="categoria" onchange="this.form.submit()">
+                <select name="categoria" id="categoria">
                     <option value="">Todas</option>
                     {% for cat in categorias %}
                     <option value="{{ cat }}" {% if request.args.get('categoria') == cat %}selected{% endif %}>{{ cat }}</option>
@@ -14,12 +18,15 @@
             </div>
             <div class="form-group">
                 <label for="periodo">Filtrar por Período:</label>
-                <select name="periodo" id="periodo" onchange="this.form.submit()">
+                <select name="periodo" id="periodo">
                     <option value="">Desde Sempre</option>
                     <option value="ultimo_mes" {% if request.args.get('periodo') == 'ultimo_mes' %}selected{% endif %}>Último Mês</option>
                 </select>
             </div>
-            <a href="{{ url_for('index') }}" class="btn-clear-filter">Limpar Filtros</a>
+            <div class="form-group-buttons">
+                <button type="submit" class="btn-submit">Filtrar</button>
+                <a href="{{ url_for('index') }}" class="btn-clear-filter">Limpar Filtros</a>
+            </div>
         </form>
     </div>
     <div class="actions">
