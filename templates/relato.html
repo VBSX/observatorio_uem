@@ -15,7 +15,7 @@
             <p class="relato-meta">
                 <strong>Enviado por:</strong>
                 {% if relato.autor_relato %}
-                    <a href="{{ url_for('profile', user_id=relato.autor_id) }}">{{ relato.autor_relato }}</a>
+                    <a href="{{ url_for('profile', user_id=relato.autor_id) }}" class="relato-name">{{ relato.autor_relato }}</a>
                 {% else %}
                     Anônimo
                 {% endif %}
@@ -74,7 +74,8 @@
             <div class="comment" id="comment-{{ comentario.id }}">
                 <div class="comment-header">
                     <p class="comment-author">
-                        <a href="{{ url_for('profile', user_id=comentario.autor_id) }}">
+                        <img src="{{ comentario.profile_pic_url or url_for('static', filename='img/default_avatar.png') }}" alt="Foto de {{ comentario.profile_pic_url }}" class="profile-avatar">
+                        <a href="{{ url_for('profile', user_id=comentario.autor_id) }} " class="comment-author-name">
                             <strong>{{ comentario.autor }}</strong>
                         </a> 
                         em {{ comentario.criado_em.strftime('%d/%m/%Y %H:%M') }}

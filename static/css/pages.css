@@ -67,6 +67,9 @@
     padding-bottom: 10px;
     margin-bottom: 20px;
 }
+.relato-name{
+    color: #8A2BE2;
+}
 .relato-body p {
     white-space: pre-wrap;
 }
@@ -136,6 +139,12 @@
     color: #aaa;
     margin-bottom: 0;
 }
+.comment-author-name{
+    color: #8A2BE2;
+    font-size: 1.5em;
+    padding-left: 10px;
+    padding-right: 10px;
+}
 .report-form {
     margin: 0;
     padding: 0;
@@ -160,6 +169,7 @@
     margin-top: 20px;
     padding: 0;
 }
+
 
 /* --- PÁGINA DE LENDAS URBANAS --- */
 .lendas-grid {
