@@ -4,9 +4,14 @@
     {% if show_captcha %}
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     {% endif %}
+
 {% endblock %}
 
 {% block content %}
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p class="loading-text">Enviando seu relato, por favor aguarde...</p>
+    </div>
     <h2>Relate sua Experiência Sobrenatural</h2>
     
     {% if g.user %}
@@ -15,7 +20,7 @@
         <p class="form-notice">Você não está logado. Seu relato será enviado anonimamente. <a href="{{ url_for('login') }}">Faça login</a> para que ele seja associado ao seu perfil.</p>
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data" novalidate>
+    <form method="post" enctype="multipart/form-data" novalidate id="relato-form">
         {{ form.csrf_token }}
 
         <div class="form-group">
@@ -78,7 +83,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Note que usamos '{{ form.local.id }}' para garantir que pegamos o ID correto gerado pelo WTForms
             const localSelect = document.getElementById('{{ form.local.id }}');
             const outroLocalContainer = document.getElementById('outro-local-container');
             const outroLocalInput = document.getElementById('{{ form.outro_local_texto.id }}');
@@ -98,6 +102,21 @@
             toggleOutroLocal();
             updateCounter('{{ form.titulo.id }}', 100);
             updateCounter('{{ form.descricao.id }}', 2000);
+
+            // === INÍCIO: JAVASCRIPT PARA ATIVAR O CARREGAMENTO ===
+            const form = document.getElementById('relato-form');
+            const submitButton = form.querySelector('.btn-submit');
+            const loadingOverlay = document.getElementById('loading-overlay');
+
+            form.addEventListener('submit', function() {
+                // Desabilita o botão e muda o texto
+                submitButton.disabled = true;
+                submitButton.value = 'Enviando...';
+
+                // Mostra o overlay de carregamento
+                loadingOverlay.classList.add('visible');
+            });
+            // === FIM: JAVASCRIPT PARA ATIVAR O CARREGAMENTO ===
         });
 
         function updateCounter(fieldId, maxLength) {

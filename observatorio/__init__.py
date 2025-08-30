@@ -22,8 +22,6 @@ limiter = Limiter(
 
 def create_app(test_config=None):
     load_dotenv()
-
-    # --- INÍCIO: CÓDIGO DO FILTRO PERSONALIZADO 'nl2br' ---
     def nl2br(value):
         """Converte quebras de linha em <br> de forma segura."""
         if not isinstance(value, str):
@@ -31,7 +29,6 @@ def create_app(test_config=None):
         # Escapa o texto para segurança e depois substitui \n por <br>
         escaped_text = escape(value)
         return Markup(escaped_text.replace('\n', '<br>\n'))
-    # --- FIM: CÓDIGO DO FILTRO PERSONALIZADO ---
 
     app = Flask(
         __name__,
@@ -39,7 +36,11 @@ def create_app(test_config=None):
         template_folder='../templates',
         static_folder='../static'
     )
-
+    if app.debug:
+        from flask_debugtoolbar import DebugToolbarExtension
+        app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'uma-chave-secreta-para-desenvolvimento')
+        toolbar = DebugToolbarExtension(app)
+        
     # --- CONFIGURAÇÃO PARA POSTGRESQL (NEON) ---
     db_url = os.environ.get('DATABASE_URL')
     if not db_url:
