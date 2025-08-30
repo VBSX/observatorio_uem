@@ -4,7 +4,19 @@
     {% if show_captcha %}
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     {% endif %}
-{% endblock %}
+
+    <style>
+        .btn-vote:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .vote-info-message {
+            color: #aaa;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+    </style>
+    {% endblock %}
 
 {% block content %}
 <div class="relato-container">
@@ -50,18 +62,28 @@
                 <p>Este relato é crível?</p>
                 <div class="vote-buttons">
                     <button class="btn-vote acredito" data-voto="acredito" {% if voto_usuario %}disabled{% endif %}>
-                        👻 Eu Acredito (<span id="votos-acredito">{{ relato.votos_acredito }}</span>)
+                        <span class="btn-vote-text">👻 Eu Acredito</span> (<span id="votos-acredito">{{ relato.votos_acredito }}</span>)
                     </button>
                     <button class="btn-vote cetico" data-voto="cetico" {% if voto_usuario %}disabled{% endif %}>
-                        🤔 Cético (<span id="votos-cetico">{{ relato.votos_cetico }}</span>)
+                        <span class="btn-vote-text">🤔 Cético</span> (<span id="votos-cetico">{{ relato.votos_cetico }}</span>)
                     </button>
                 </div>
-                <p id="vote-message" class="vote-message"></p>
+
+                <p id="vote-message" class="vote-message">
+                    {% if voto_usuario %}
+                        <span class="vote-info-message">Você já votou neste relato.</span>
+                    {% endif %}
+                    </p>
+
                 <div class="witness-section">
                     <button class="btn-vote witness" data-voto="witness" {% if testemunha_usuario %}disabled{% endif %}>
-                        👀 Eu também vi! (<span id="votos-testemunha">{{ relato.votos_testemunha }}</span>)
+                        <span class="btn-vote-text">👀 Eu também vi!</span> (<span id="votos-testemunha">{{ relato.votos_testemunha }}</span>)
                     </button>
-                    <p id="witness-message" class="vote-message"></p>
+                    <p id="witness-message" class="vote-message">
+                        {% if testemunha_usuario %}
+                            <span class="vote-info-message">Você já marcou que também testemunhou este evento.</span>
+                        {% endif %}
+                        </p>
                 </div>
             </div>
         </footer>
@@ -134,20 +156,27 @@
         }
 
         if (voteSection) {
-            const originallyEnabledButtons = new Set();
-            voteSection.querySelectorAll('.btn-vote:not(:disabled)').forEach(btn => {
-                originallyEnabledButtons.add(btn);
-            });
-
             voteSection.addEventListener('click', async (e) => {
                 const button = e.target.closest('.btn-vote');
                 if (!button || button.disabled) return;
 
-                const allButtons = voteSection.querySelectorAll('.btn-vote');
-                allButtons.forEach(btn => btn.disabled = true);
+                const buttonTextSpan = button.querySelector('.btn-vote-text');
+                if (!buttonTextSpan) {
+                    console.error("Elemento de texto do botão (.btn-vote-text) não encontrado. Verifique a estrutura HTML do botão.");
+                    return;
+                }
 
-                const originalButtonText = button.innerHTML;
-                button.innerHTML = 'Processando...';
+                const allButtons = voteSection.querySelectorAll('.btn-vote');
+                const originallyEnabledButtons = new Set();
+                allButtons.forEach(btn => {
+                    if (!btn.disabled) {
+                        originallyEnabledButtons.add(btn);
+                    }
+                    btn.disabled = true;
+                });
+
+                const originalButtonText = buttonTextSpan.textContent;
+                buttonTextSpan.textContent = 'Processando...';
 
                 const relatoId = voteSection.dataset.relatoId;
                 const tipoVoto = button.dataset.voto;
@@ -202,7 +231,7 @@
                     console.error("Erro na requisição:", error);
                     const messageEl = document.getElementById(messageElId || 'vote-message');
                     if (messageEl) {
-                        messageEl.textContent = 'Falha na comunicação.';
+                        messageEl.textContent = 'Falha na comunicação. Verifique o console (F12).';
                         messageEl.style.color = 'red';
                     }
                     allButtons.forEach(btn => {
@@ -211,13 +240,7 @@
                         }
                     });
                 } finally {
-                    if (button && !button.disabled) {
-                        button.innerHTML = originalButtonText;
-                    } else if (button && button.disabled) {
-                        // Se o voto teve sucesso, restaura o texto original.
-                        // A contagem já foi atualizada no 'try' e não será afetada.
-                        button.innerHTML = originalButtonText;
-                    }
+                    buttonTextSpan.textContent = originalButtonText;
                 }
             });
         }
