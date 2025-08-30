@@ -126,12 +126,28 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const voteSection = document.querySelector('.vote-section');
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Pega o token do layout
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        if (!csrfToken) {
+            console.error("ERRO CRÍTICO: Meta tag CSRF 'csrf-token' não encontrada no <head>.");
+            return;
+        }
 
         if (voteSection) {
+            const originallyEnabledButtons = new Set();
+            voteSection.querySelectorAll('.btn-vote:not(:disabled)').forEach(btn => {
+                originallyEnabledButtons.add(btn);
+            });
+
             voteSection.addEventListener('click', async (e) => {
                 const button = e.target.closest('.btn-vote');
                 if (!button || button.disabled) return;
+
+                const allButtons = voteSection.querySelectorAll('.btn-vote');
+                allButtons.forEach(btn => btn.disabled = true);
+
+                const originalButtonText = button.innerHTML;
+                button.innerHTML = 'Processando...';
 
                 const relatoId = voteSection.dataset.relatoId;
                 const tipoVoto = button.dataset.voto;
@@ -149,47 +165,76 @@
                 try {
                     const response = await fetch(endpoint, { 
                         method: 'POST',
-                        headers: {
-                            'X-CSRFToken': csrfToken // <-- TOKEN ENVIADO NO CABEÇALHO
-                        }
+                        headers: { 'X-CSRFToken': csrfToken }
                     });
-                    const data = await response.json();
-                    
-                    const messageEl = document.getElementById(messageElId);
-                    messageEl.textContent = data.message;
 
-                    if (response.ok && data.success) {
+                    if (!response.ok) {
+                        throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    const messageEl = document.getElementById(messageElId);
+                    
+                    if (messageEl) {
+                        messageEl.textContent = data.message;
+                        messageEl.style.color = data.success ? 'green' : 'red';
+                    }
+
+                    if (data.success) {
                         if (tipoVoto === 'acredito') {
-                            document.getElementById('votos-acredito').textContent = data.votos_acredito;
-                            document.querySelector('.btn-vote.cetico').disabled = true;
+                            const countEl = document.getElementById('votos-acredito');
+                            if (countEl) countEl.textContent = data.votos_acredito;
                         } else if (tipoVoto === 'cetico') {
-                            document.getElementById('votos-cetico').textContent = data.votos_cetico;
-                            document.querySelector('.btn-vote.acredito').disabled = true;
+                            const countEl = document.getElementById('votos-cetico');
+                            if (countEl) countEl.textContent = data.votos_cetico;
                         } else if (tipoVoto === 'witness') {
-                            document.getElementById('votos-testemunha').textContent = data.votos_testemunha;
+                            const countEl = document.getElementById('votos-testemunha');
+                            if (countEl) countEl.textContent = data.votos_testemunha;
                         }
-                        button.disabled = true;
-                        messageEl.style.color = 'green';
                     } else {
-                        messageEl.style.color = 'red';
+                        allButtons.forEach(btn => {
+                            if (originallyEnabledButtons.has(btn)) {
+                                btn.disabled = false;
+                            }
+                        });
                     }
                 } catch (error) {
-                    document.getElementById(messageElId).textContent = 'Ocorreu um erro de rede.';
+                    console.error("Erro na requisição:", error);
+                    const messageEl = document.getElementById(messageElId || 'vote-message');
+                    if (messageEl) {
+                        messageEl.textContent = 'Falha na comunicação.';
+                        messageEl.style.color = 'red';
+                    }
+                    allButtons.forEach(btn => {
+                        if (originallyEnabledButtons.has(btn)) {
+                            btn.disabled = false;
+                        }
+                    });
+                } finally {
+                    if (button && !button.disabled) {
+                        button.innerHTML = originalButtonText;
+                    } else if (button && button.disabled) {
+                        // Se o voto teve sucesso, restaura o texto original.
+                        // A contagem já foi atualizada no 'try' e não será afetada.
+                        button.innerHTML = originalButtonText;
+                    }
                 }
             });
         }
         
-        updateCounter('texto', 1000);
-    });
-
-    function updateCounter(fieldId, maxLength) {
-        const field = document.getElementById(fieldId);
-        const counter = document.getElementById(fieldId + '-counter');
-        if (field && counter) {
-            const remaining = maxLength - field.value.length;
-            counter.textContent = remaining;
-            counter.style.color = remaining < 20 ? (remaining < 0 ? '#ff0000' : '#ffc107') : '#aaa';
+        function updateCounter(fieldId, maxLength) {
+            const field = document.getElementById(fieldId);
+            const counter = document.getElementById(fieldId + '-counter');
+            if (field && counter) {
+                const remaining = maxLength - field.value.length;
+                counter.textContent = remaining;
+                counter.style.color = remaining < 20 ? (remaining < 0 ? '#ff0000' : '#ffc107') : '#aaa';
+            }
         }
-    }
+
+        if (document.getElementById('texto')) {
+             updateCounter('texto', 1000);
+        }
+    });
 </script>
 {% endblock %}

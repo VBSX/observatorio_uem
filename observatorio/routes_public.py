@@ -6,7 +6,7 @@ from flask import (
     jsonify, session, current_app
 )
 from collections import defaultdict
-
+import traceback
 import psycopg2.extras
 from authlib.integrations.flask_client import OAuth
 import os
@@ -357,6 +357,7 @@ def register_public_routes(app, limiter):
         flash('Comentário não encontrado.')
         return safe_redirect('index')
 
+    
     @app.route('/vote/<int:relato_id>/<string:tipo_voto>', methods=['POST'])
     @limiter.limit("30 per hour")
     def vote(relato_id, tipo_voto):
@@ -365,28 +366,62 @@ def register_public_routes(app, limiter):
             session['sid'] = str(uuid.uuid4())
         if tipo_voto not in ['acredito', 'cetico']:
             return jsonify({'success': False, 'message': 'Tipo de voto inválido'}), 400
+
         db = get_db()
         cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute('SELECT * FROM votos WHERE relato_id = %s AND session_id = %s', (relato_id, session['sid']))
-        voto_existente = cur.fetchone()
-        if voto_existente:
+        try:
+            # ETAPA 1: VERIFICAR VOTO EXISTENTE
+            check_start = time.time()
+            cur.execute('SELECT * FROM votos WHERE relato_id = %s AND session_id = %s', (relato_id, session['sid']))
+            voto_existente = cur.fetchone()
+            log_register(time.time() - check_start, f"Voto: Verificação de voto existente para relato {relato_id}")
+
+            if voto_existente:
+                cur.close()
+                return jsonify({'success': False, 'message': 'Você já votou neste relato.'}), 403
+
+            # ETAPA 2: INSERIR NOVO VOTO
+            insert_start = time.time()
+            ip_address, city, user_agent = get_request_metadata()
+            cur.execute(
+                'INSERT INTO votos (relato_id, session_id, tipo_voto, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s, %s)',
+                (relato_id, session['sid'], tipo_voto, ip_address, city, user_agent)
+            )
+            log_register(time.time() - insert_start, f"Voto: Inserção na tabela 'votos'")
+
+            # ETAPA 3: ATUALIZAR CONTAGEM
+            update_start = time.time()
+            coluna = 'votos_acredito' if tipo_voto == 'acredito' else 'votos_cetico'
+            cur.execute(f'UPDATE relatos SET {coluna} = {coluna} + 1 WHERE id = %s', (relato_id,))
+            log_register(time.time() - update_start, f"Voto: Update na tabela 'relatos'")
+            
+            # ETAPA 4: COMMIT
+            commit_start = time.time()
+            db.commit()
+            log_register(time.time() - commit_start, "Voto: db.commit()")
+
+            # ETAPA 5: BUSCAR CONTAGENS FINAIS
+            fetch_start = time.time()
+            cur.execute('SELECT votos_acredito, votos_cetico FROM relatos WHERE id = %s', (relato_id,))
+            contagens = cur.fetchone()
             cur.close()
-            return jsonify({'success': False, 'message': 'Você já votou neste relato.'}), 403
-        ip_address, city, user_agent = get_request_metadata()
-        cur.execute(
-            'INSERT INTO votos (relato_id, session_id, tipo_voto, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s, %s)',
-            (relato_id, session['sid'], tipo_voto, ip_address, city, user_agent)
-        )
-        coluna = 'votos_acredito' if tipo_voto == 'acredito' else 'votos_cetico'
-        cur.execute(f'UPDATE relatos SET {coluna} = {coluna} + 1 WHERE id = %s', (relato_id,))
-        db.commit()
-        cur.execute('SELECT votos_acredito, votos_cetico FROM relatos WHERE id = %s', (relato_id,))
-        contagens = cur.fetchone()
-        cur.close()
+            log_register(time.time() - fetch_start, "Voto: Busca de contagens finais")
+            
+            log_register(time.time() - start_time, f"Voto: Processo total finalizado com sucesso para relato {relato_id}")
+            return jsonify({'success': True, 'message': 'Voto computado!', 'votos_acredito': contagens['votos_acredito'], 'votos_cetico': contagens['votos_cetico']})
 
-        current_app.logger.info(f"Operação de banco de dados geral levou(voto): {time.time() - start_time:.2f} segundos.")
-        return jsonify({'success': True, 'message': 'Voto computado!', 'votos_acredito': contagens['votos_acredito'], 'votos_cetico': contagens['votos_cetico']})
-
+        except Exception as e:
+            db.rollback()
+            cur.close()
+            # Usando print para capturar o erro completo, como solicitado.
+            print(f"\n!!!!!!!!!! FALHA CRÍTICA AO VOTAR (relato_id: {relato_id}) !!!!!!!!!!")
+            traceback.print_exc() # Imprime o traceback completo do erro
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+            log_register(time.time() - start_time, f"Voto: FALHA NO PROCESSO para relato {relato_id}")
+            return jsonify({'success': False, 'message': 'Ocorreu um erro interno no servidor.'}), 500
+        
+    
+    
     def update_witness_metadata_task(witness_id, ip_address, user_agent):
         """
         Busca a cidade e atualiza o registro da testemunha.
