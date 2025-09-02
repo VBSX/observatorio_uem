@@ -96,3 +96,31 @@
         padding: 5px 10px;
     }
 }
+/* --- PÁGINA DE PERFIL --- */
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    .profile-info h1 {
+        font-size: 1.8em;
+    }
+    .profile-container {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-list a {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .profile-list-title {
+        margin-right: 0;
+    }
+    .profile-list-meta {
+        font-size: 0.8em;
+    }
+}

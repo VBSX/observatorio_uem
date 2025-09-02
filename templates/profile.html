@@ -1,5 +1,9 @@
 {% extends 'layout.html' %}
 
+{% block head %}
+  {{ super() }}
+{% endblock %}
+
 {% block content %}
 <div class="profile-container">
     <header class="profile-header">
@@ -19,11 +23,16 @@
                     <li>
                         <a href="{{ url_for('relato', relato_id=relato.id) }}">
                             <span class="profile-list-title">{{ relato.titulo }}</span>
-                            <span class="profile-list-meta">{{ 'Aprovado' if relato.aprovado else 'Pendente' }} - {{ relato.criado_em.strftime('%d/%m/%Y') }}</span>
+                            {% if relato.aprovado %}
+                                <span class="profile-list-meta status-aprovado">Aprovado</span>
+                            {% else %}
+                                <span class="profile-list-meta status-pendente">Pendente</span>
+                            {% endif %}
+                            <span class="profile-list-meta">{{ relato.criado_em.strftime('%d/%m/%Y') }}</span>
                         </a>
                     </li>
                 {% else %}
-                    <li>Este investigador ainda não enviou nenhum relato.</li>
+                    <li class="profile-list-empty">Este investigador ainda não enviou nenhum relato.</li>
                 {% endfor %}
             </ul>
         </section>
@@ -39,7 +48,7 @@
                         </a>
                     </li>
                 {% else %}
-                    <li>Este investigador ainda não fez nenhum comentário.</li>
+                    <li class="profile-list-empty">Este investigador ainda não fez nenhum comentário.</li>
                 {% endfor %}
             </ul>
         </section>
