@@ -131,7 +131,7 @@ def send_new_relato_notification(app, relato_data):
 
         # Monta a mensagem
         subject = f"Novo Relato Recebido: {relato_data['titulo']}"
-
+        admin_link = relato_data['admin_link']
         html_content = f"""
         <html>
         <body>
@@ -143,6 +143,7 @@ def send_new_relato_notification(app, relato_data):
             <p style="white-space: pre-wrap;">{relato_data['descricao']}</p>
             <hr>
             <p>Para aprovar ou gerenciar este relato, acesse o painel de administração.</p>
+            <a href="{admin_link}">Painel de Administração</a>.
         </body>
         </html>
         """

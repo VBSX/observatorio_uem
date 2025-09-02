@@ -225,11 +225,13 @@ def register_public_routes(app, limiter):
             # --- CÓDIGO NOVO PARA ENVIAR E-MAIL ---
             try:
                 app_context = current_app._get_current_object() 
+                admin_link_completo = url_for('admin_relatos', _external=True)
                 # Prepara os dados do relato para o e-mail
                 relato_para_email = {
                     'titulo': titulo,
                     'local': local_final,
-                    'descricao': descricao
+                    'descricao': descricao,
+                    'admin_link': admin_link_completo
                 }
                 email_thread = Thread(
                     target=send_new_relato_notification, 
