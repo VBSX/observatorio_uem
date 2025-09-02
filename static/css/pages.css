@@ -469,9 +469,8 @@
     color: #664d03;
 }
 /* --- ESTILOS ADICIONAIS PARA A BARRA DE FILTROS COM BUSCA --- */
-
 .filter-container .form-group input[type="search"] {
-    padding: 11px; /* Ajuste fino para alinhar altura com os selects */
+    padding: 11px;
 }
 
 .filter-actions {
@@ -589,4 +588,23 @@
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.9em;
+}
+/* Badge para contagem de comentários no painel de admin */
+.comment-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 10px;
+    background-color: #4a4a4a;
+    color: #ccc;
+    padding: 3px 8px;
+    font-size: 0.8em;
+    border-radius: 12px;
+    font-weight: bold;
+    vertical-align: middle;
+}
+
+.comment-count-badge svg {
+    width: 12px;
+    height: 12px;
 }

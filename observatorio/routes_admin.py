@@ -36,35 +36,42 @@ def register_admin_routes(app):
         cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         filtro_status = request.args.get('filtro', 'pendentes')
-        query = 'SELECT * FROM relatos'
+        
+        query = """
+            SELECT r.*, COUNT(c.id) as comment_count
+            FROM relatos r
+            LEFT JOIN comentarios c ON r.id = c.relato_id
+        """
         params = []
 
         if filtro_status == 'pendentes':
-            query += ' WHERE aprovado = %s'
+            query += ' WHERE r.aprovado = %s'
             params.append(False)
         elif filtro_status == 'aprovados':
-            query += ' WHERE aprovado = %s'
+            query += ' WHERE r.aprovado = %s'
             params.append(True)
         elif filtro_status == 'denunciados':
             cur.execute('SELECT DISTINCT relato_id FROM comentarios WHERE denunciado = TRUE')
             denunciados_ids_rows = cur.fetchall()
             denunciados_ids = [row['relato_id'] for row in denunciados_ids_rows]
             if not denunciados_ids:
-                query += ' WHERE 1 = 0' # Nenhum relato para mostrar
+                query += ' WHERE 1 = 0'
             else:
                 placeholders = ', '.join(['%s'] * len(denunciados_ids))
-                query += f' WHERE id IN ({placeholders})'
+                query += f' WHERE r.id IN ({placeholders})'
                 params.extend(denunciados_ids)
 
+        query += ' GROUP BY r.id'
+
         if filtro_status == 'todos':
-            query = 'SELECT * FROM relatos ORDER BY aprovado ASC, id DESC'
-            params = []
+            query += ' ORDER BY r.aprovado ASC, r.id DESC'
         else:
-            query += ' ORDER BY id DESC'
+            query += ' ORDER BY r.id DESC'
 
         cur.execute(query, tuple(params))
         relatos_filtrados = cur.fetchall()
 
+        # Esta busca de comentários agora é usada principalmente para a seção de denunciados
         cur.execute('SELECT * FROM comentarios ORDER BY criado_em DESC')
         todos_comentarios = cur.fetchall()
 

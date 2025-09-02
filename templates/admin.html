@@ -48,7 +48,18 @@
                 {% for relato in relatos %}
                 <tr class="status-{{ 'aprovado' if relato.aprovado else 'pendente' }}">
                     <td>{{ relato.id }}</td>
-                    <td>{{ relato.titulo }}</td>
+                    <td>
+                        <a href="{{ url_for('relato', relato_id=relato.id) }}" target="_blank" title="Ver relato em nova aba">
+                            {{ relato.titulo }}
+                        </a>
+
+                        {% if relato.aprovado and relato.comment_count > 0 %}
+                            <span class="comment-count-badge" title="{{ relato.comment_count }} comentário(s)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                {{ relato.comment_count }}
+                            </span>
+                        {% endif %}
+                    </td>
                     <td>{{ relato.local }}</td>
                     <td>
                         {% if relato.imagem_url %}
@@ -72,7 +83,9 @@
                         {% else %}
                             <span class="status-badge status-pendente">Pendente</span>
                         {% endif %}
+                        
                     </td>
+                    
                     <td class="actions-cell">
                         <button class="btn-action btn-view" onclick="toggleDescription({{ relato.id }})">Ver Conteúdo</button>
 
