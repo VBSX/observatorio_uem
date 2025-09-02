@@ -131,7 +131,7 @@ def send_new_relato_notification(app, relato_data):
 
         # Monta a mensagem
         subject = f"Novo Relato Recebido: {relato_data['titulo']}"
-
+        admin_link = relato_data['admin_link']
         html_content = f"""
         <html>
         <body>
@@ -143,6 +143,7 @@ def send_new_relato_notification(app, relato_data):
             <p style="white-space: pre-wrap;">{relato_data['descricao']}</p>
             <hr>
             <p>Para aprovar ou gerenciar este relato, acesse o painel de administração.</p>
+            <a href="{admin_link}">Painel de Administração</a>.
         </body>
         </html>
         """
@@ -165,3 +166,70 @@ def send_new_relato_notification(app, relato_data):
             log_register(description=f"E-mail de notificação enviado com sucesso para {receiver_email}")
         except Exception as e:
             app.logger.error(f"Falha ao enviar e-mail de notificação: {e}")
+
+def send_approval_notification(app, user_email, relato_data):
+    """
+    Envia um e-mail para o usuário informando que seu relato foi aprovado.
+    Executado em uma thread para não bloquear a ação do admin.
+    """
+    with app.app_context():
+        sender_email = app.config['MAIL_USERNAME']
+        password = app.config['MAIL_PASSWORD']
+
+        # Monta a mensagem do e-mail
+        subject = f"Seu relato foi aprovado: {relato_data['titulo']}"
+        
+        html_content = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: sans-serif; color: #333; }}
+                .container {{ padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto; }}
+                .header {{ font-size: 20px; color: #8A2BE2; }}
+                .button {{
+                    display: inline-block;
+                    padding: 10px 20px;
+                    margin-top: 20px;
+                    background-color: #8A2BE2;
+                    color: #ffffff;
+                    text-decoration: none;
+                    border-radius: 5px;
+                }}
+                a {{ color: #8A2BE2; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2 class="header">Ótima notícia! Seu relato foi aprovado.</h2>
+                <p>Olá,</p>
+                <p>
+                    Obrigado por sua contribuição para o Observatório UEM. Seu relato,
+                    "<strong>{relato_data['titulo']}</strong>", foi revisado e aprovado pela nossa equipe.
+                </p>
+                <p>Agora ele está visível para toda a comunidade no mapa de fenômenos.</p>
+                <a href="{relato_data['relato_url']}" class="button">Ver meu Relato Publicado</a>
+                <p style="margin-top: 30px; font-size: 0.9em; color: #777;">
+                    Atenciosamente,<br>
+                    Equipe do Observatório UEM
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        message = MIMEMultipart("alternative")
+        message["Subject"] = subject
+        message["From"] = f"Observatório UEM <{sender_email}>"
+        message["To"] = user_email
+        message.attach(MIMEText(html_content, "html"))
+
+        try:
+            # Conecta ao servidor SMTP e envia o e-mail
+            context = smtplib.ssl.create_default_context()
+            with smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT']) as server:
+                server.starttls(context=context)
+                server.login(sender_email, password)
+                server.sendmail(sender_email, user_email, message.as_string())
+            app.logger.info(f"E-mail de aprovação enviado com sucesso para {user_email}")
+        except Exception as e:
+            app.logger.error(f"Falha ao enviar e-mail de aprovação para {user_email}: {e}")

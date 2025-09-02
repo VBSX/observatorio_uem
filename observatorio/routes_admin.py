@@ -1,12 +1,12 @@
 # observatorio/routes_admin.py
 
-from flask import render_template, request, flash, current_app
+from flask import render_template, request, flash, current_app, url_for
 from collections import defaultdict
 import cloudinary.uploader
 import psycopg2.extras
-
+from threading import Thread
 from .db import get_db
-from .utils import auth_required, safe_redirect
+from .utils import auth_required, safe_redirect,send_approval_notification
 from .forms import AdminActionForm, LendaForm
 
 def register_admin_routes(app):
@@ -92,10 +92,43 @@ def register_admin_routes(app):
         form = AdminActionForm()
         if form.validate_on_submit():
             db = get_db()
-            cur = db.cursor()
+            cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
             cur.execute('UPDATE relatos SET aprovado = TRUE WHERE id = %s', (relato_id,))
+            cur.execute("""
+                SELECT r.titulo, u.email
+                FROM relatos r
+                LEFT JOIN users u ON r.user_id = u.id
+                WHERE r.id = %s
+            """, (relato_id,))
+            relato_info = cur.fetchone()
+
             db.commit()
             cur.close()
+
+            # --- CÓDIGO PARA ENVIAR E-MAIL AO USUÁRIO ---
+            # Verifica se o relato foi encontrado e se tem um e-mail de usuário associado
+            if relato_info and relato_info['email']:
+                try:
+                    # Gera a URL completa para o relato
+                    relato_url = url_for('relato', relato_id=relato_id, _external=True)
+
+                    # Prepara os dados para a função de e-mail
+                    email_data = {
+                        'titulo': relato_info['titulo'],
+                        'relato_url': relato_url
+                    }
+                    
+                    app_context = current_app._get_current_object()
+                    
+                    # Inicia a thread para enviar o e-mail em segundo plano
+                    email_thread = Thread(
+                        target=send_approval_notification,
+                        args=(app_context, relato_info['email'], email_data)
+                    )
+                    email_thread.start()
+                except Exception as e:
+                    current_app.logger.error(f"Erro ao iniciar a thread de e-mail de aprovação: {e}")
+
             flash(f'Relato #{relato_id} foi aprovado com sucesso!')
         else:
             flash('Erro de validação ao aprovar o relato.')
