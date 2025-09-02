@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS comentarios (
 -- Adiciona colunas à tabela de comentários, somente se elas não existirem
 ALTER TABLE comentarios ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE comentarios ADD COLUMN IF NOT EXISTS autor VARCHAR(50);
+ALTER TABLE comentarios ADD COLUMN IF NOT EXISTS like_count INTEGER NOT NULL DEFAULT 0;
 
 
 -- Cria a tabela de votos, somente se ela não existir
@@ -76,4 +77,15 @@ CREATE TABLE IF NOT EXISTS lendas (
     descricao TEXT NOT NULL,
     local VARCHAR(255) NOT NULL,
     imagem_url VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS comentarios_likes (
+    id SERIAL PRIMARY KEY,
+    comentario_id INTEGER NOT NULL REFERENCES comentarios(id) ON DELETE CASCADE,
+    session_id VARCHAR(36) NOT NULL,
+    criado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    city VARCHAR(100),
+    user_agent VARCHAR(255),
+    UNIQUE (comentario_id, session_id)
 );

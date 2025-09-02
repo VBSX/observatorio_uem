@@ -1,5 +1,3 @@
-/* Estilos para páginas específicas: Mapa, Relato, Lendas e Admin */
-
 /* --- PÁGINA DO MAPA --- */
 .map-container {
     margin-top: 20px;
@@ -133,11 +131,13 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 5px;
+    gap: 15px;
 }
 .comment-author {
     font-size: 0.9em;
     color: #aaa;
     margin-bottom: 0;
+    flex-grow: 1; /* Permite que este elemento cresça e empurre os outros */
 }
 .comment-author-name{
     color: #8A2BE2;
@@ -149,6 +149,7 @@
     margin: 0;
     padding: 0;
     background: none;
+    flex-shrink: 0; /* Impede que o botão encolha */
 }
 .btn-report {
     background: none;
@@ -169,6 +170,35 @@
     margin-top: 20px;
     padding: 0;
 }
+
+/* --- NOVOS ESTILOS PARA O LIKE --- */
+.like-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.like-icon {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+.like-icon.not-liked:hover {
+    /* Troca a imagem no hover apenas se ainda não foi curtida */
+    content: url('/static/images/ghost.png');
+    transform: scale(1.2);
+}
+.like-icon.liked:hover {
+    /* Efeito sutil para ícones já curtidos */
+    transform: scale(1.1);
+}
+.like-count {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #ccc;
+}
+/* --- FIM DOS NOVOS ESTILOS --- */
 
 
 /* --- PÁGINA DE LENDAS URBANAS --- */

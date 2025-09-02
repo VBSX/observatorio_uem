@@ -16,7 +16,7 @@
             font-size: 0.9em;
         }
     </style>
-    {% endblock %}
+{% endblock %}
 
 {% block content %}
 <div class="relato-container">
@@ -73,7 +73,7 @@
                     {% if voto_usuario %}
                         <span class="vote-info-message">Você já votou neste relato.</span>
                     {% endif %}
-                    </p>
+                </p>
 
                 <div class="witness-section">
                     <button class="btn-vote witness" data-voto="witness" {% if testemunha_usuario %}disabled{% endif %}>
@@ -83,7 +83,7 @@
                         {% if testemunha_usuario %}
                             <span class="vote-info-message">Você já marcou que também testemunhou este evento.</span>
                         {% endif %}
-                        </p>
+                    </p>
                 </div>
             </div>
         </footer>
@@ -96,8 +96,8 @@
             <div class="comment" id="comment-{{ comentario.id }}">
                 <div class="comment-header">
                     <p class="comment-author">
-                        <img src="{{ comentario.profile_pic_url or url_for('static', filename='img/default_avatar.png') }}" alt="Foto de {{ comentario.profile_pic_url }}" class="profile-avatar">
-                        <a href="{{ url_for('profile', user_id=comentario.autor_id) }} " class="comment-author-name">
+                        <img src="{{ comentario.profile_pic_url or url_for('static', filename='img/default_avatar.png') }}" alt="Foto de {{ comentario.autor }}" class="profile-avatar">
+                        <a href="{{ url_for('profile', user_id=comentario.autor_id) }}" class="comment-author-name">
                             <strong>{{ comentario.autor }}</strong>
                         </a> 
                         em {{ comentario.criado_em.strftime('%d/%m/%Y %H:%M') }}
@@ -106,6 +106,16 @@
                         {{ report_form.csrf_token }}
                         <button type="submit" class="btn-report" title="Denunciar este comentário">Denunciar</button>
                     </form>
+                    
+                    <div class="like-container" data-comment-id="{{ comentario.id }}">
+                        {% set is_liked = comentario.id in liked_comments %}
+                        <img 
+                            src="{{ url_for('static', filename='images/ghost.png' if is_liked else 'images/ghost_sem_like.png') }}" 
+                            alt="Votar comentário" 
+                            class="like-icon {{ 'liked' if is_liked else 'not-liked' }}" 
+                            title="Votar comentário">
+                        <span class="like-count">{{ comentario.like_count }}</span>
+                    </div>
                 </div>
                 <p>{{ comentario.texto }}</p>
             </div>
@@ -146,118 +156,130 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const voteSection = document.querySelector('.vote-section');
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    function updateCounter(fieldId, maxLength) {
+        const field = document.getElementById(fieldId);
+        const counter = document.getElementById(fieldId + '-counter');
+        if (field && counter) {
+            const remaining = maxLength - field.value.length;
+            counter.textContent = remaining;
+            counter.style.color = remaining < 20 ? (remaining < 0 ? '#ff0000' : '#ffc107') : '#aaa';
+        }
+    }
 
-        if (!csrfToken) {
-            console.error("ERRO CRÍTICO: Meta tag CSRF 'csrf-token' não encontrada no <head>.");
-            return;
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.getElementById('texto')) {
+            updateCounter('texto', 1000);
         }
 
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) {
+            console.error("ERRO CRÍTICO: Meta tag CSRF 'csrf-token' não encontrada no <head>.");
+        }
+
+        const voteSection = document.querySelector('.vote-section');
         if (voteSection) {
             voteSection.addEventListener('click', async (e) => {
                 const button = e.target.closest('.btn-vote');
                 if (!button || button.disabled) return;
 
-                const buttonTextSpan = button.querySelector('.btn-vote-text');
-                if (!buttonTextSpan) {
-                    console.error("Elemento de texto do botão (.btn-vote-text) não encontrado. Verifique a estrutura HTML do botão.");
-                    return;
-                }
-
-                const allButtons = voteSection.querySelectorAll('.btn-vote');
-                const originallyEnabledButtons = new Set();
-                allButtons.forEach(btn => {
-                    if (!btn.disabled) {
-                        originallyEnabledButtons.add(btn);
-                    }
-                    btn.disabled = true;
-                });
-
-                const originalButtonText = buttonTextSpan.textContent;
-                buttonTextSpan.textContent = 'Processando...';
-
-                const relatoId = voteSection.dataset.relatoId;
                 const tipoVoto = button.dataset.voto;
-                let endpoint = '';
-                let messageElId = '';
-                
+                const messageEl = document.getElementById(tipoVoto === 'witness' ? 'witness-message' : 'vote-message');
+                const relatoId = voteSection.dataset.relatoId;
+                const endpoint = (tipoVoto === 'acredito' || tipoVoto === 'cetico') 
+                                ? `/vote/${relatoId}/${tipoVoto}` 
+                                : `/witness/${relatoId}`;
+
+                const buttonsToDisable = [];
                 if (tipoVoto === 'acredito' || tipoVoto === 'cetico') {
-                    endpoint = `/vote/${relatoId}/${tipoVoto}`;
-                    messageElId = 'vote-message';
+                    buttonsToDisable.push(voteSection.querySelector('.btn-vote.acredito'));
+                    buttonsToDisable.push(voteSection.querySelector('.btn-vote.cetico'));
                 } else if (tipoVoto === 'witness') {
-                    endpoint = `/witness/${relatoId}`;
-                    messageElId = 'witness-message';
+                    buttonsToDisable.push(voteSection.querySelector('.btn-vote.witness'));
                 }
+
+                buttonsToDisable.forEach(btn => { if(btn) btn.disabled = true; });
 
                 try {
                     const response = await fetch(endpoint, { 
                         method: 'POST',
                         headers: { 'X-CSRFToken': csrfToken }
                     });
-
-                    if (!response.ok) {
-                        throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
-                    }
-
                     const data = await response.json();
-                    const messageEl = document.getElementById(messageElId);
-                    
+
                     if (messageEl) {
                         messageEl.textContent = data.message;
                         messageEl.style.color = data.success ? 'green' : 'red';
                     }
 
                     if (data.success) {
-                        if (tipoVoto === 'acredito') {
-                            const countEl = document.getElementById('votos-acredito');
-                            if (countEl) countEl.textContent = data.votos_acredito;
-                        } else if (tipoVoto === 'cetico') {
-                            const countEl = document.getElementById('votos-cetico');
-                            if (countEl) countEl.textContent = data.votos_cetico;
-                        } else if (tipoVoto === 'witness') {
-                            const countEl = document.getElementById('votos-testemunha');
-                            if (countEl) countEl.textContent = data.votos_testemunha;
-                        }
+                        if (data.votos_acredito !== undefined) document.getElementById('votos-acredito').textContent = data.votos_acredito;
+                        if (data.votos_cetico !== undefined) document.getElementById('votos-cetico').textContent = data.votos_cetico;
+                        if (data.votos_testemunha !== undefined) document.getElementById('votos-testemunha').textContent = data.votos_testemunha;
                     } else {
-                        allButtons.forEach(btn => {
-                            if (originallyEnabledButtons.has(btn)) {
-                                btn.disabled = false;
-                            }
-                        });
+                        buttonsToDisable.forEach(btn => { if(btn) btn.disabled = false; });
                     }
                 } catch (error) {
-                    console.error("Erro na requisição:", error);
-                    const messageEl = document.getElementById(messageElId || 'vote-message');
+                    console.error("Erro na requisição de voto:", error);
                     if (messageEl) {
-                        messageEl.textContent = 'Falha na comunicação. Verifique o console (F12).';
+                        messageEl.textContent = 'Falha na comunicação com o servidor.';
                         messageEl.style.color = 'red';
                     }
-                    allButtons.forEach(btn => {
-                        if (originallyEnabledButtons.has(btn)) {
-                            btn.disabled = false;
-                        }
-                    });
-                } finally {
-                    buttonTextSpan.textContent = originalButtonText;
+                    buttonsToDisable.forEach(btn => { if(btn) btn.disabled = false; });
                 }
             });
         }
         
-        function updateCounter(fieldId, maxLength) {
-            const field = document.getElementById(fieldId);
-            const counter = document.getElementById(fieldId + '-counter');
-            if (field && counter) {
-                const remaining = maxLength - field.value.length;
-                counter.textContent = remaining;
-                counter.style.color = remaining < 20 ? (remaining < 0 ? '#ff0000' : '#ffc107') : '#aaa';
-            }
-        }
+        // --- LÓGICA DE LIKE/UNLIKE ATUALIZADA ---
+        document.querySelectorAll('.like-icon').forEach(icon => {
+            icon.addEventListener('click', async function likeToggleHandler(e) {
+                const likeIcon = e.target;
+                const commentContainer = likeIcon.closest('.like-container');
+                const commentId = commentContainer.dataset.commentId;
 
-        if (document.getElementById('texto')) {
-             updateCounter('texto', 1000);
-        }
+                if (!commentId || !csrfToken) {
+                    console.error("Faltando ID do comentário ou token CSRF.");
+                    return;
+                }
+
+                // Previne cliques múltiplos enquanto a requisição está em andamento
+                if (likeIcon.classList.contains('processing')) return;
+                likeIcon.classList.add('processing');
+
+                try {
+                    const response = await fetch(`/like_comment/${commentId}`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken }
+                    });
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        const likeCountSpan = commentContainer.querySelector('.like-count');
+                        if (likeCountSpan) {
+                            likeCountSpan.textContent = data.contagens;
+                        }
+
+                        // Alterna o estado do ícone com base na resposta do servidor
+                        if (data.action === 'liked') {
+                            likeIcon.src = likeIcon.src.replace('ghost_sem_like.png', 'ghost.png');
+                            likeIcon.classList.remove('not-liked');
+                            likeIcon.classList.add('liked');
+                        } else if (data.action === 'unliked') {
+                            likeIcon.src = likeIcon.src.replace('ghost.png', 'ghost_sem_like.png');
+                            likeIcon.classList.remove('liked');
+                            likeIcon.classList.add('not-liked');
+                        }
+                    } else {
+                        alert(data.message || 'Não foi possível registrar sua ação.');
+                    }
+                } catch (error) {
+                    console.error("Erro na requisição de like/unlike:", error);
+                    alert('Falha na comunicação ao tentar interagir com o comentário.');
+                } finally {
+                    // Libera o ícone para o próximo clique
+                    likeIcon.classList.remove('processing');
+                }
+            });
+        });
     });
 </script>
 {% endblock %}
