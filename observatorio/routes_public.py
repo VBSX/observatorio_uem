@@ -5,7 +5,6 @@ from flask import (
     render_template, request, url_for, flash, redirect, g,
     jsonify, session, current_app
 )
-from collections import defaultdict
 import traceback
 import psycopg2.extras
 from authlib.integrations.flask_client import OAuth
@@ -105,6 +104,7 @@ def register_public_routes(app, limiter):
                     json_build_object(
                         'id', id,
                         'titulo', titulo,
+                        'local', local,
                         'categoria', categoria,
                         'criado_em', to_char(criado_em, 'DD/MM/YYYY'),
                         'imagem_url', imagem_url
@@ -267,6 +267,14 @@ def register_public_routes(app, limiter):
             WHERE c.relato_id = %s ORDER BY c.criado_em ASC
         """, (relato_id,))
         comentarios_db = cur.fetchall()
+        # Verifica quais comentários o usuário da sessão atual já curtiu
+        liked_comments = set()
+        if 'sid' in session:
+            session_id = session.get('sid')
+            cur.execute('SELECT comentario_id FROM comentarios_likes WHERE session_id = %s', (session_id,))
+            # Cria um conjunto (set) com os IDs dos comentários curtidos para uma verificação rápida
+            liked_comments = {row['comentario_id'] for row in cur.fetchall()}
+
         cur.execute('SELECT tipo_voto FROM votos WHERE relato_id = %s AND session_id = %s', (relato_id, session.get('sid')))
         voto_usuario = cur.fetchone()
         cur.execute('SELECT id FROM testemunhas WHERE relato_id = %s AND session_id = %s', (relato_id, session.get('sid')))
@@ -285,7 +293,8 @@ def register_public_routes(app, limiter):
                                site_key=current_app.config['RECAPTCHA_SITE_KEY'],
                                show_captcha=not current_app.debug,
                                comment_form=comment_form,
-                               report_form=report_form)
+                               report_form=report_form,
+                               liked_comments=liked_comments)
 
     @app.route('/relato/<int:relato_id>/comment', methods=['POST'])
     @limiter.limit("10 per minute")
@@ -359,8 +368,6 @@ def register_public_routes(app, limiter):
         form = AdminActionForm()
         if not form.validate_on_submit():
             flash('Falha na validação da denúncia. Tente novamente.')
-            # Achar um bom redirecionamento é difícil sem saber de onde o usuário veio
-            # A página inicial é uma opção segura.
             return safe_redirect('index')
 
         db = get_db()
@@ -377,6 +384,64 @@ def register_public_routes(app, limiter):
         flash('Comentário não encontrado.')
         return safe_redirect('index')
 
+    
+    @app.route('/like_comment/<int:commentId>', methods=['POST'])
+    @limiter.limit("30 per minute")
+    def like_comment(commentId):
+        start_time = time.time()
+        if 'sid' not in session:
+            session['sid'] = str(uuid.uuid4())
+        
+        db = get_db()
+        cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        try:
+            # ETAPA 1: VERIFICAR VOTO EXISTENTE
+            check_start = time.time()
+            cur.execute('SELECT id FROM comentarios_likes WHERE comentario_id = %s AND session_id = %s', (commentId, session['sid']))
+            voto_existente = cur.fetchone()
+            log_register(time.time() - check_start, f"LikeToggle: Verificação de voto existente para comentário {commentId}")
+
+            if voto_existente:
+                # --- LÓGICA DE UNLIKE ---
+                db_op_start = time.time()
+                cur.execute('DELETE FROM comentarios_likes WHERE id = %s', (voto_existente['id'],))
+                cur.execute('UPDATE comentarios SET like_count = GREATEST(0, like_count - 1) WHERE id = %s', (commentId,))
+                log_register(time.time() - db_op_start, f"LikeToggle: UNLIKE no comentário {commentId}")
+                action = 'unliked'
+            else:
+                # --- LÓGICA DE LIKE ---
+                db_op_start = time.time()
+                ip_address, city, user_agent = get_request_metadata()
+                cur.execute(
+                    'INSERT INTO comentarios_likes (comentario_id, session_id, ip_address, city, user_agent) VALUES (%s, %s, %s, %s, %s)',
+                    (commentId, session['sid'], ip_address, city, user_agent)
+                )
+                cur.execute('UPDATE comentarios SET like_count = like_count + 1 WHERE id = %s', (commentId,))
+                log_register(time.time() - db_op_start, f"LikeToggle: LIKE no comentário {commentId}")
+                action = 'liked'
+            
+            # ETAPA FINAL: COMMIT E BUSCA DE CONTAGEM
+            commit_start = time.time()
+            db.commit()
+            log_register(time.time() - commit_start, "LikeToggle: db.commit()")
+
+            fetch_start = time.time()
+            cur.execute('SELECT like_count FROM comentarios WHERE id = %s', (commentId,))
+            contagens = cur.fetchone()
+            cur.close()
+            log_register(time.time() - fetch_start, "LikeToggle: Busca de contagens finais")
+            
+            log_register(time.time() - start_time, f"LikeToggle: Processo total '{action}' finalizado para comentário {commentId}")
+            return jsonify({'success': True, 'contagens': contagens, 'action': action}), 200
+
+        except Exception as e:
+            db.rollback()
+            cur.close()
+            traceback.print_exc()
+            log_register(time.time() - start_time, f"LikeToggle: FALHA no processo para comentário {commentId}")
+            return jsonify({'success': False, 'message': 'Ocorreu um erro interno no servidor.'}), 500
+    
+    
     
     @app.route('/vote/<int:relato_id>/<string:tipo_voto>', methods=['POST'])
     @limiter.limit("30 per hour")
