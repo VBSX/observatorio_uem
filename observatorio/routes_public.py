@@ -104,6 +104,7 @@ def register_public_routes(app, limiter):
                     json_build_object(
                         'id', id,
                         'titulo', titulo,
+                        'local', local,
                         'categoria', categoria,
                         'criado_em', to_char(criado_em, 'DD/MM/YYYY'),
                         'imagem_url', imagem_url
