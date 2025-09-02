@@ -1,0 +1,20 @@
+# .github/workflows/deploy.yml
+name: Deploy Local no Windows com Docker
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy na Maquina Windows
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v4
+
+      - name: Executar script de deploy com Docker
+        shell: cmd
+        run: deploy.bat

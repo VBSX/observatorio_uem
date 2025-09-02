@@ -1,0 +1,16 @@
+# Ambientes virtuais
+venv
+.venv
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Arquivos do Git
+.git
+.gitignore
+
+# Arquivos do Docker
+.dockerignore
+Dockerfile
