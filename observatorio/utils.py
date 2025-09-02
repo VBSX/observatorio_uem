@@ -6,6 +6,9 @@ from urllib.parse import urlparse, urljoin
 from flask import request, Response, url_for, redirect, current_app
 import cloudinary
 import cloudinary.uploader
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 def auth_required(f):
     """Decorador para proteger rotas que exigem autenticação de admin."""
@@ -107,7 +110,58 @@ def upload_audio_task(audio_file, results):
         results['audio_url'] = None
         results['audio_error'] = 'Houve um erro ao fazer o upload do áudio.'
 
-def log_register(time, description):
-    text = f"Operação ({description}) levou: {time:.2f} segundos."
+def log_register(time=None, description=None):
+    text = f"Operação ({description})" 
+    if time is not None:
+        text += f" levou: {time:.2f} segundos." 
     print(text)
     current_app.logger.info(text)
+
+def send_new_relato_notification(app, relato_data):
+    """
+    Envia um e-mail de notificação para o admin sobre um novo relato.
+    Projetado para ser executado em uma thread separada para não bloquear a requisição.
+    """
+    with app.app_context():
+        
+        # Pega as configurações de e-mail do app
+        sender_email = app.config['MAIL_USERNAME']
+        receiver_email = app.config['ADMIN_EMAIL']
+        password = app.config['MAIL_PASSWORD']
+
+        # Monta a mensagem
+        subject = f"Novo Relato Recebido: {relato_data['titulo']}"
+
+        html_content = f"""
+        <html>
+        <body>
+            <h2>Um novo relato foi enviado para o Observatório UEM e aguarda sua aprovação.</h2>
+            <p><strong>Título:</strong> {relato_data['titulo']}</p>
+            <p><strong>Local:</strong> {relato_data['local']}</p>
+            <hr>
+            <h3>Descrição:</h3>
+            <p style="white-space: pre-wrap;">{relato_data['descricao']}</p>
+            <hr>
+            <p>Para aprovar ou gerenciar este relato, acesse o painel de administração.</p>
+        </body>
+        </html>
+        """
+
+        message = MIMEMultipart("alternative")
+        message["Subject"] = subject
+        message["From"] = sender_email
+        message["To"] = receiver_email
+
+        # Anexa a parte HTML
+        message.attach(MIMEText(html_content, "html"))
+
+        try:
+            # Conecta ao servidor SMTP e envia o e-mail
+            context = smtplib.ssl.create_default_context()
+            with smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT']) as server:
+                server.starttls(context=context)
+                server.login(sender_email, password)
+                server.sendmail(sender_email, receiver_email, message.as_string())
+            log_register(description=f"E-mail de notificação enviado com sucesso para {receiver_email}")
+        except Exception as e:
+            app.logger.error(f"Falha ao enviar e-mail de notificação: {e}")

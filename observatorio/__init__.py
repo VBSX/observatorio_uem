@@ -40,7 +40,7 @@ def create_app(test_config=None):
         from flask_debugtoolbar import DebugToolbarExtension
         app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'uma-chave-secreta-para-desenvolvimento')
         toolbar = DebugToolbarExtension(app)
-        
+
     # --- CONFIGURAÇÃO PARA POSTGRESQL (NEON) ---
     db_url = os.environ.get('DATABASE_URL')
     if not db_url:
@@ -48,6 +48,15 @@ def create_app(test_config=None):
 
     app.config.from_mapping(
         SECRET_KEY=os.environ.get('SECRET_KEY'),
+        
+        # --- NOVAS CONFIGURAÇÕES DE E-MAIL ---
+        MAIL_SERVER=os.environ.get('MAIL_SERVER'),
+        MAIL_PORT=int(os.environ.get('MAIL_PORT', 587)),
+        MAIL_USE_TLS=os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't'],
+        MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
+        MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
+        ADMIN_EMAIL=os.environ.get('ADMIN_EMAIL'), # O e-mail que receberá a notificação
+        
         RECAPTCHA_SITE_KEY=os.environ.get('RECAPTCHA_SITE_KEY'),
         RECAPTCHA_SECRET_KEY=os.environ.get('RECAPTCHA_SECRET_KEY'),
         ADMIN_USERNAME=os.environ.get('ADMIN_USERNAME'),

@@ -11,7 +11,7 @@ import psycopg2.extras
 from authlib.integrations.flask_client import OAuth
 import os
 from .db import get_db
-from .utils import get_request_metadata, safe_redirect,get_city_from_ip,log_register, upload_audio_task, upload_image_task
+from .utils import get_request_metadata, safe_redirect,get_city_from_ip,log_register, upload_audio_task, upload_image_task,send_new_relato_notification
 from .forms import SubmitForm, CommentForm, AdminActionForm
 import time 
 from threading import Thread
@@ -221,6 +221,24 @@ def register_public_routes(app, limiter):
             )
             db.commit()
             cur.close()
+
+            # --- CÓDIGO NOVO PARA ENVIAR E-MAIL ---
+            try:
+                app_context = current_app._get_current_object() 
+                # Prepara os dados do relato para o e-mail
+                relato_para_email = {
+                    'titulo': titulo,
+                    'local': local_final,
+                    'descricao': descricao
+                }
+                email_thread = Thread(
+                    target=send_new_relato_notification, 
+                    args=(app_context, relato_para_email)
+                )
+                email_thread.start()
+            except Exception as e:
+                current_app.logger.error(f"Erro ao iniciar a thread de e-mail: {e}")
+            
             current_app.logger.info(f"Operação de banco de dados levou: {time.time() - db_start:.2f} segundos.")
             current_app.logger.info(f"Processamento total levou: {time.time() - start_time:.2f} segundos.")
             
