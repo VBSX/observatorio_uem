@@ -13,21 +13,37 @@ pool = None
 def get_db():
     """
     Obtém uma conexão do pool para a requisição atual.
-    Cria a conexão se ela ainda não existir no contexto 'g' da requisição.
+    Verifica se a conexão está ativa antes de retorná-la, estabelecendo
+    uma nova conexão se a anterior estiver fechada.
     """
-    if 'db' not in g:
-        # Pega uma conexão do pool. Esta operação é MUITO RÁPIDA.
-        g.db = pool.getconn()
+    # Acessa a conexão no contexto 'g' da request.
+    # A propriedade 'closed' em uma conexão psycopg2 é 0 se estiver aberta.
+    if 'db' not in g or g.db.closed:
+        try:
+            # Se não há conexão em 'g' ou se a existente foi fechada,
+            # obtemos uma nova do pool.
+            g.db = pool.getconn()
+        except psycopg2.OperationalError as e:
+            current_app.logger.critical(f"CRITICAL: Não foi possível obter uma conexão do pool: {e}")
+            # Lança a exceção para que o Flask possa retornar um erro 500.
+            raise
     return g.db
 
 def close_db(e=None):
     """
-    Devolve a conexão de volta ao pool em vez de fechá-la.
+    Devolve a conexão de volta ao pool ou a fecha se ocorreu um erro.
     """
     db = g.pop('db', None)
+
     if db is not None:
-        # Devolve a conexão para o pool para ser reutilizada.
-        pool.putconn(db)
+        # Se houve uma exceção durante a request (e is not None) ou se a conexão
+        # já está fechada, é mais seguro descartar a conexão em vez de devolvê-la ao pool.
+        # Isso evita que uma conexão em estado inconsistente seja reutilizada.
+        if e is None and not db.closed:
+            pool.putconn(db)
+        else:
+            # Fecha a conexão permanentemente. O pool criará uma nova quando necessário.
+            db.close()
 
 def init_db():
     """Executa o ficheiro schema.sql para criar as tabelas na base de dados."""
@@ -65,9 +81,14 @@ def init_app(app):
     
     # Cria o pool de conexões UMA ÚNICA VEZ quando a aplicação é inicializada.
     # minconn=1, maxconn=10 -> Começa com 1 conexão e pode crescer até 10.
-    pool = psycopg2.pool.SimpleConnectionPool(
-        1, 10, dsn=app.config['DATABASE_URL']
-    )
+    if pool is None:
+        try:
+            pool = psycopg2.pool.SimpleConnectionPool(
+                1, 10, dsn=app.config['DATABASE_URL']
+            )
+        except psycopg2.OperationalError as e:
+            app.logger.critical(f"FALHA CRÍTICA: Não foi possível criar o pool de conexões com o DB. {e}")
+            raise RuntimeError(f"Could not create database connection pool: {e}")
     
     # Registra o close_db para ser chamado ao final de cada requisição.
     app.teardown_appcontext(close_db)
