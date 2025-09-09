@@ -8,3 +8,7 @@ app.pyold
 instance/
 locais_uem - Copia.json
 locais_uemold.json
+/build/teste
+teste.spec
+/dist
+teste.py

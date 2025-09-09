@@ -4,7 +4,7 @@ set CONTAINER_NAME=flask-container
 
 echo.
 echo >>> Puxando as ultimas alteracoes do repositorio...
-git pull origin main
+git pull origin master
 
 echo.
 echo >>> Construindo a nova imagem Docker...
